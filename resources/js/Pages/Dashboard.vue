@@ -97,10 +97,10 @@ const stopTable = (id) => {
         </template>
 
         <!-- Table Grid -->
-        <div class="row g-4">
-            <div v-for="table in tables" :key="table.id" class="col-12 col-md-6 col-lg-4 col-xl-3">
-                <div class="bb-table-card" :class="{ 'bb-table-card--active': table.status === 'active' }">
-                    <div class="p-4">
+        <div class="d-grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));">
+            <div v-for="table in tables" :key="table.id" class="h-100">
+                <div class="bb-table-card w-100 h-100 d-flex flex-column" :class="{ 'bb-table-card--active': table.status === 'active' }">
+                    <div class="p-4 d-flex flex-column flex-grow-1">
                         <!-- Header -->
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <div class="d-flex align-items-center gap-2">
@@ -111,14 +111,14 @@ const stopTable = (id) => {
                                    :title="table.status === 'active' ? 'Lampu Menyala' : 'Lampu Mati'"
                                 ></i>
                             </div>
-                            <span class="bb-status-badge" :class="table.status === 'active' ? 'bb-status-badge--active' : 'bb-status-badge--ready'">
+                            <span class="bb-status-badge flex-shrink-0" :class="table.status === 'active' ? 'bb-status-badge--active' : 'bb-status-badge--ready'">
                                 <i :class="table.status === 'active' ? 'bi bi-circle-fill' : 'bi bi-circle'" style="font-size: 0.45rem;"></i>
                                 {{ table.status === 'active' ? 'In Use' : 'Ready' }}
                             </span>
                         </div>
 
                         <!-- Timer / Idle -->
-                        <div class="text-center py-4">
+                        <div class="text-center py-4 flex-grow-1 d-flex flex-column justify-content-center">
                             <template v-if="table.status === 'active'">
                                 <div class="text-uppercase small fw-bold mb-2" style="color: #10b981; letter-spacing: 0.15em; font-size: 0.7rem;">Sisa Waktu</div>
                                 <div class="bb-timer display-4 fw-bold" :class="{ 'bb-timer--expired': timers[table.id] === '00:00:00' }" style="color: #10b981;">
@@ -134,14 +134,16 @@ const stopTable = (id) => {
                         </div>
 
                         <!-- Action Button -->
-                        <button v-if="table.status === 'inactive'" @click="openOrderModal(table)"
-                            class="bb-btn bb-btn--success w-100 py-3">
-                            <i class="bi bi-play-fill"></i> Start Order
-                        </button>
-                        <button v-else @click="stopTable(table.id)"
-                            class="bb-btn bb-btn--danger w-100 py-3">
-                            <i class="bi bi-stop-fill"></i> Stop & Checkout
-                        </button>
+                        <div class="mt-auto pt-3">
+                            <button v-if="table.status === 'inactive'" @click="openOrderModal(table)"
+                                class="bb-btn bb-btn--success w-100 py-3">
+                                <i class="bi bi-play-fill"></i> Start Order
+                            </button>
+                            <button v-else @click="stopTable(table.id)"
+                                class="bb-btn bb-btn--danger w-100 py-3">
+                                <i class="bi bi-stop-fill"></i> Stop & Checkout
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

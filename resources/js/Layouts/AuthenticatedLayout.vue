@@ -83,6 +83,11 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
                     <i class="bi bi-tag-fill"></i>
                     Paket & Harga
                 </Link>
+
+                <Link :href="route('fnb_items.index')" class="bb-nav-link" :class="{ active: route().current('fnb_items.index') }" @click="closeSidebarMobile">
+                    <i class="bi bi-cup-straw"></i>
+                    Kelola Makanan
+                </Link>
             </nav>
 
             <!-- User Section -->

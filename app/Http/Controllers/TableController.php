@@ -11,7 +11,7 @@ class TableController extends Controller
 {
     public function index()
     {
-        $tables = Table::orderBy('name')->get();
+        $tables = Table::all()->sortBy('name', SORT_NATURAL)->values();
         $packages = \App\Models\Package::all();
 
         return Inertia::render('Dashboard', [
@@ -24,7 +24,7 @@ class TableController extends Controller
     public function masterIndex()
     {
         return Inertia::render('Master/Tables', [
-            'tables' => Table::orderBy('name')->get()
+            'tables' => Table::all()->sortBy('name', SORT_NATURAL)->values()
         ]);
     }
 
@@ -32,11 +32,24 @@ class TableController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'relay_channel' => 'required|integer|unique:tables,relay_channel'
+            'relay_channel' => 'required|integer|min:1|max:16'
         ]);
 
         Table::create($validated);
+
         return back()->with('success', 'Meja berhasil ditambahkan.');
+    }
+
+    public function update(Request $request, Table $table)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'relay_channel' => 'required|integer|min:1|max:16'
+        ]);
+
+        $table->update($validated);
+
+        return back()->with('success', 'Meja berhasil diupdate.');
     }
 
     public function destroy(Table $table)

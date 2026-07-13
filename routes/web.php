@@ -19,11 +19,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/master/tables', [TableController::class, 'masterIndex'])->name('tables.index');
     Route::post('/master/tables', [TableController::class, 'store'])->name('tables.store');
+    Route::put('/master/tables/{table}', [TableController::class, 'update'])->name('tables.update');
     Route::delete('/master/tables/{table}', [TableController::class, 'destroy'])->name('tables.destroy');
 
     Route::get('/master/packages', [PackageController::class, 'index'])->name('packages.index');
     Route::post('/master/packages', [PackageController::class, 'store'])->name('packages.store');
+    Route::put('/master/packages/{package}', [PackageController::class, 'update'])->name('packages.update');
     Route::delete('/master/packages/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
+
+    Route::get('/master/fnb-items', [\App\Http\Controllers\FnbItemController::class, 'index'])->name('fnb_items.index');
+    Route::post('/master/fnb-items', [\App\Http\Controllers\FnbItemController::class, 'store'])->name('fnb_items.store');
+    Route::put('/master/fnb-items/{fnbItem}', [\App\Http\Controllers\FnbItemController::class, 'update'])->name('fnb_items.update');
+    Route::delete('/master/fnb-items/{fnbItem}', [\App\Http\Controllers\FnbItemController::class, 'destroy'])->name('fnb_items.destroy');
 });
 
 Route::middleware('auth')->group(function () {
