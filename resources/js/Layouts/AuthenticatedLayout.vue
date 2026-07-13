@@ -1,0 +1,143 @@
+<script setup>
+import { ref, onMounted, computed } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
+
+const isDark = ref(true);
+const currentTime = ref('');
+// Buka sidebar secara default kecuali jika di halaman dashboard
+const isSidebarOpen = ref(!route().current('dashboard'));
+
+const toggleSidebar = () => {
+    isSidebarOpen.value = !isSidebarOpen.value;
+};
+
+const closeSidebarMobile = () => {
+    if (window.innerWidth < 992) {
+        isSidebarOpen.value = false;
+    }
+};
+
+const toggleTheme = () => {
+    isDark.value = !isDark.value;
+    document.documentElement.setAttribute('data-bs-theme', isDark.value ? 'dark' : 'light');
+    localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
+};
+
+const updateClock = () => {
+    currentTime.value = new Date().toLocaleTimeString('en-US', { hour12: false });
+};
+
+onMounted(() => {
+    if (localStorage.theme === 'light') {
+        isDark.value = false;
+        document.documentElement.setAttribute('data-bs-theme', 'light');
+    } else {
+        isDark.value = true;
+        document.documentElement.setAttribute('data-bs-theme', 'dark');
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+});
+
+const userName = computed(() => usePage().props.auth?.user?.name || 'Admin');
+const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
+</script>
+
+<template>
+    <div class="d-flex" style="height: 100vh; overflow: hidden; position: relative;">
+        
+        <!-- Mobile Sidebar Backdrop (Only visible on small screens when open) -->
+        <div v-if="isSidebarOpen" class="bb-sidebar-backdrop d-lg-none" @click="closeSidebarMobile"></div>
+
+        <!-- Sidebar -->
+        <aside class="bb-sidebar" :class="{ 'bb-sidebar--open': isSidebarOpen }">
+            <!-- Logo -->
+            <div class="d-flex justify-content-between align-items-center bb-sidebar-logo">
+                <Link :href="route('dashboard')" class="text-decoration-none d-flex align-items-center gap-3 w-100" @click="closeSidebarMobile">
+                    <div class="bb-logo-icon">B</div>
+                    <div class="bb-logo-text">
+                        Billiar billing
+                        <small>Management System</small>
+                    </div>
+                </Link>
+                <button class="d-lg-none btn btn-sm border-0 text-secondary" @click="closeSidebarMobile">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="bb-nav">
+                <Link :href="route('dashboard')" class="bb-nav-link" :class="{ active: route().current('dashboard') }" @click="closeSidebarMobile">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    Live Monitoring
+                </Link>
+                
+                <div class="bb-nav-label">Master Data</div>
+
+                <Link :href="route('tables.index')" class="bb-nav-link" :class="{ active: route().current('tables.index') }" @click="closeSidebarMobile">
+                    <i class="bi bi-columns-gap"></i>
+                    Kelola Meja
+                </Link>
+
+                <Link :href="route('packages.index')" class="bb-nav-link" :class="{ active: route().current('packages.index') }" @click="closeSidebarMobile">
+                    <i class="bi bi-tag-fill"></i>
+                    Paket & Harga
+                </Link>
+            </nav>
+
+            <!-- User Section -->
+            <div class="bb-sidebar-user">
+                <div class="dropdown">
+                    <button class="bb-user-card dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="--bs-dropdown-toggle-icon-transform: none;">
+                        <div class="bb-user-avatar">{{ userInitial }}</div>
+                        <div class="bb-user-info">
+                            <div class="bb-user-name">{{ userName }}</div>
+                            <div class="bb-user-role">Kasir / Admin</div>
+                        </div>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-2" style="border-radius: 0.75rem; min-width: 200px;">
+                        <li>
+                            <Link class="dropdown-item rounded-2 py-2 px-3" :href="route('profile.edit')">
+                                <i class="bi bi-person-circle me-2"></i> Profil
+                            </Link>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li>
+                            <Link class="dropdown-item rounded-2 py-2 px-3 text-danger" :href="route('logout')" method="post" as="button">
+                                <i class="bi bi-box-arrow-left me-2"></i> Log Out
+                            </Link>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow-1 d-flex flex-column overflow-hidden bb-main">
+            <!-- Header Bar -->
+            <header class="bb-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="bb-btn bb-btn--ghost p-2" style="border-radius: 0.5rem;" @click="toggleSidebar">
+                        <i class="bi bi-list fs-5"></i>
+                    </button>
+                    <slot name="header" />
+                </div>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <div class="font-monospace fw-bold px-3 py-1 rounded-3 small" style="background: rgba(16,185,129,0.08); color: #10b981; border: 1px solid rgba(16,185,129,0.15);">
+                        <i class="bi bi-clock me-1"></i>{{ currentTime }}
+                    </div>
+                    <button @click="toggleTheme" class="bb-theme-toggle">
+                        <i :class="isDark ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill'"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="bb-page-content">
+                <slot />
+            </div>
+        </main>
+        
+    </div>
+</template>

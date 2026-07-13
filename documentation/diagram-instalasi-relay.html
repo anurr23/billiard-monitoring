@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowchart Instalasi Relay</title>
+    <!-- Memuat library Mermaid.js dari CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true
+            }
+        });
+    </script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            padding: 40px; 
+            background-color: #f9f9f9;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .mermaid { 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .instructions {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Diagram Langkah-Langkah Instalasi Relay (Untuk Awam)</h2>
+    <div class="mermaid">
+        flowchart TD
+            A([Mulai: Persiapan Alat]) --> B["🛑 WAJIB: Matikan Listrik Utama (MCB) di meteran"]
+            
+            B --> C["Siapkan kabel listrik lampu biliar<br>(ada 2 jalur kabel di dalamnya)"]
+            
+            C --> D{"Belah sedikit pembungkus kabel luar"}
+            D -->|"Pilih satu jalur kabel saja<br>(Misal: Kabel Merah / Fasa)"| E["✂️ Potong kabel merah tersebut menjadi 2 ujung"]
+            D -->|"Jalur kabel satunya<br>(Misal: Kabel Biru / Netral)"| F["Biarkan utuh (jangan dipotong),<br>tetap tersambung dari colokan ke lampu"]
+            
+            E --> G["🔌 Ujung kabel yang dari arah colokan listrik dinding<br>masukkan ke lubang 'COM' di alat Relay"]
+            E --> H["💡 Ujung kabel yang menuju ke arah lampu biliar<br>masukkan ke lubang 'NO' (Normally Open) di alat Relay"]
+            
+            G --> I["Kencangkan baut pada lubang 'COM' dan 'NO'<br>dengan obeng (+/-)"]
+            H --> I
+            
+            I --> J["💻 Colokkan kabel USB dari alat Relay<br>ke Komputer / Laptop Kasir"]
+            
+            J --> K["⚡ Nyalakan kembali Listrik Utama (MCB) di meteran"]
+            
+            K --> L["Buka Aplikasi Kasir Biliar di Komputer,<br>lalu klik tombol 'START' pada meja tersebut"]
+            
+            L --> M{"Apakah Lampu Menyala?"}
+            M -->|YA| N(["✅ SELESAI:<br>Instalasi Berhasil dan Aman!"])
+            M -->|TIDAK| O["Cek pengaturan Port USB di aplikasi<br>atau kencangkan ulang baut kabel"]
+            O --> L
+            
+            style B fill:#ffcccc,stroke:#ff0000,stroke-width:2px
+            style N fill:#ccffcc,stroke:#00aa00,stroke-width:2px
+    </div>
+    <p class="instructions">💡 <strong>Tips:</strong> Anda dapat menggunakan fitur "Zoom In" pada browser (Ctrl + Scroll Mouse atas) untuk memperbesar diagram agar mudah dibaca.</p>
+</body>
+</html>

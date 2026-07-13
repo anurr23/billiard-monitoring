@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Animasi Instalasi Relay Biliar</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #222;
+    color: white;
+    text-align: center;
+    padding: 20px;
+  }
+  .container {
+    position: relative;
+    width: 800px;
+    height: 500px;
+    margin: 0 auto;
+    background: #333;
+    border: 2px solid #555;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  /* Komponen */
+  .box {
+    position: absolute;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .pln { top: 200px; left: 20px; width: 100px; height: 100px; background: #e74c3c; z-index: 10; border: 2px solid #c0392b;}
+  .relay { top: 350px; left: 350px; width: 120px; height: 80px; background: #f39c12; z-index: 10; border: 2px solid #d35400;}
+  .lamp { top: 50px; left: 650px; width: 100px; height: 100px; background: #7f8c8d; border-radius: 50%; z-index: 10; transition: background 0.3s, box-shadow 0.3s; border: 2px solid #555;}
+  .lamp.on { background: #f1c40f; box-shadow: 0 0 40px #f1c40f; border-color: #fff;}
+  .pc { top: 360px; left: 650px; width: 100px; height: 60px; background: #3498db; cursor: pointer; z-index: 10; border: 2px solid #2980b9; transition: transform 0.1s;}
+  .pc:active { transform: scale(0.95); background: #2980b9; }
+
+  /* Kabel Dasar */
+  .wire {
+    position: absolute;
+    z-index: 5;
+    background: #111;
+  }
+  
+  /* Kabel Netral (Biru) PLN ke Lampu */
+  .wire-neutral { top: 100px; left: 70px; width: 630px; height: 8px; background: #2980b9; }
+  .wire-neutral-vert1 { top: 100px; left: 70px; width: 8px; height: 100px; background: #2980b9; }
+  
+  /* Kabel Fasa (Merah) PLN ke Relay COM */
+  .wire-fasa1 { top: 250px; left: 120px; width: 230px; height: 8px; background: #c0392b; }
+  
+  /* Kabel Fasa (Merah) Relay NO ke Lampu */
+  .wire-fasa2-horiz { top: 250px; left: 470px; width: 230px; height: 8px; background: #c0392b; }
+  .wire-fasa2-vert { top: 150px; left: 696px; width: 8px; height: 100px; background: #c0392b; }
+  
+  /* Kabel USB dari PC ke Relay */
+  .wire-usb { top: 390px; left: 470px; width: 180px; height: 4px; background: #95a5a6; border-bottom: 2px dashed #7f8c8d; }
+
+  /* Animasi Partikel Arus Listrik */
+  @keyframes flow-right {
+    0% { transform: translateX(0); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateX(100px); opacity: 0; }
+  }
+  @keyframes flow-up {
+    0% { transform: translateY(0); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateY(-80px); opacity: 0; }
+  }
+
+  .particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    border-radius: 50%;
+    display: none;
+    z-index: 6;
+  }
+  
+  body.active .particle { display: block; }
+  
+  /* Particles for neutral (Biru) - Menyala saat on */
+  .p-n1 { top: 99px; left: 200px; animation: flow-right 1s linear infinite; background: #74b9ff; box-shadow: 0 0 10px #74b9ff; }
+  .p-n2 { top: 99px; left: 350px; animation: flow-right 1s linear infinite 0.3s; background: #74b9ff; box-shadow: 0 0 10px #74b9ff;}
+  .p-n3 { top: 99px; left: 500px; animation: flow-right 1s linear infinite 0.6s; background: #74b9ff; box-shadow: 0 0 10px #74b9ff;}
+  
+  /* Particles for Fasa 1 (Merah) - SELALU MENGALIR karena strum selalu standby di Relay */
+  .p-f1 { top: 249px; left: 150px; animation: flow-right 1s linear infinite; background: #ff7675; box-shadow: 0 0 15px #ff7675; display: block !important;}
+  .p-f2 { top: 249px; left: 250px; animation: flow-right 1s linear infinite 0.5s; background: #ff7675; box-shadow: 0 0 15px #ff7675; display: block !important;}
+
+  /* Particles for Fasa 2 (Merah setelah relay) - Mengalir HANYA saat ON */
+  .p-f3 { top: 249px; left: 480px; animation: flow-right 1s linear infinite; background: #ff7675; box-shadow: 0 0 15px #ff7675;}
+  .p-f4 { top: 249px; left: 580px; animation: flow-right 1s linear infinite 0.5s; background: #ff7675; box-shadow: 0 0 15px #ff7675;}
+  .p-f5 { top: 220px; left: 695px; animation: flow-up 1s linear infinite; background: #ff7675; box-shadow: 0 0 15px #ff7675;}
+
+  /* Relay Switch Internal (Visualisasi Saklar) */
+  .switch-line {
+    position: absolute;
+    top: 250px;
+    left: 360px;
+    width: 100px;
+    height: 8px;
+    background: #7f8c8d;
+    transform-origin: left center;
+    transform: rotate(-30deg); /* Kondisi Terbuka (Mati) */
+    transition: transform 0.3s, background 0.3s;
+    z-index: 11;
+  }
+  body.active .switch-line {
+    transform: rotate(0deg); /* Kondisi Tertutup (Nyala) */
+    background: #c0392b;
+  }
+  
+  .label { font-size: 14px; position: absolute; z-index: 20; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px;}
+</style>
+</head>
+<body>
+
+  <h2>Animasi Interaktif Pemasangan Relay Lampu</h2>
+  <p>💡 <b>Instruksi:</b> Silakan <b>KLIK TOMBOL BIRU</b> (Komputer Kasir) di kanan bawah untuk melihat bagaimana saklar relay menyambungkan setrum!</p>
+
+  <div class="container" id="animationFrame">
+    <!-- Komponen Utama -->
+    <div class="box pln">Listrik PLN<br>(MCB)</div>
+    <div class="box relay">Relay<br>(Saklar)</div>
+    <div class="box lamp" id="lampu">Lampu Meja</div>
+    <div class="box pc" onclick="toggleSystem()">KLIK SINI!<br>(Kasir)</div>
+    
+    <!-- Relay Internal Switch (Garis yang akan bergerak menyambung) -->
+    <div class="switch-line"></div>
+    
+    <!-- Kabel Biru (Netral) -->
+    <div class="wire wire-neutral-vert1"></div>
+    <div class="wire wire-neutral"></div>
+    <div class="label" style="top: 75px; left: 250px; color: #74b9ff;">Kabel Biru (Netral) - Nyambung Langsung ke Lampu</div>
+    
+    <!-- Kabel Merah (Fasa) Sebelum Relay -->
+    <div class="wire wire-fasa1"></div>
+    <div class="label" style="top: 220px; left: 150px; color: #ff7675;">Kabel Merah (Setrum)<br>Tertahan di Relay</div>
+    
+    <!-- Kabel Merah (Fasa) Sesudah Relay -->
+    <div class="wire wire-fasa2-horiz"></div>
+    <div class="wire wire-fasa2-vert"></div>
+    <div class="label" style="top: 220px; left: 480px; color: #ff7675;">Kabel Merah (Setrum)<br>Menuju Lampu</div>
+    
+    <!-- Kabel USB -->
+    <div class="wire wire-usb"></div>
+    <div class="label" style="top: 400px; left: 480px; color: #bdc3c7;">Sinyal Kabel USB (Perintah Nyala/Mati)</div>
+
+    <!-- Partikel Arus (Netral) -->
+    <div class="particle p-n1"></div>
+    <div class="particle p-n2"></div>
+    <div class="particle p-n3"></div>
+    
+    <!-- Partikel Arus (Fasa 1) - selalu ada strum yang standby masuk ke Relay -->
+    <div class="particle p-f1"></div>
+    <div class="particle p-f2"></div>
+    
+    <!-- Partikel Arus (Fasa 2) - mengalir saat saklar nutup -->
+    <div class="particle p-f3"></div>
+    <div class="particle p-f4"></div>
+    <div class="particle p-f5"></div>
+  </div>
+
+<script>
+  let isActive = false;
+  function toggleSystem() {
+    isActive = !isActive;
+    const body = document.body;
+    const lamp = document.getElementById('lampu');
+    
+    if(isActive) {
+      body.classList.add('active');
+      lamp.classList.add('on');
+    } else {
+      body.classList.remove('active');
+      lamp.classList.remove('on');
+    }
+  }
+</script>
+</body>
+</html>
