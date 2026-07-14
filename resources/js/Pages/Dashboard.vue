@@ -83,10 +83,37 @@ const updateTimers = () => {
     timers.value = newTimers;
 };
 
+// Clock State
+const currentTime = ref('');
+const currentDate = ref('');
+
+const updateClock = () => {
+    const now = new Date();
+    currentTime.value = now.toLocaleTimeString('id-ID', { hour12: false });
+    currentDate.value = now.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+// Filter State
+const currentFilter = ref('all');
+const filteredTables = computed(() => {
+    if (currentFilter.value === 'active') return props.tables.filter(t => t.status === 'active');
+    if (currentFilter.value === 'ready') return props.tables.filter(t => t.status !== 'active');
+    return props.tables;
+});
+
 let interval;
 onMounted(() => {
     updateTimers();
-    interval = setInterval(updateTimers, 1000);
+    updateClock();
+    interval = setInterval(() => {
+        updateTimers();
+        updateClock();
+    }, 1000);
 });
 onUnmounted(() => {
     clearInterval(interval);
@@ -110,20 +137,50 @@ const executeCheckout = () => {
         });
     }
 };
+
+const handleTableClick = (table) => {
+    if (table.status === 'active') {
+        confirmStopTable(table);
+    } else {
+        openOrderModal(table);
+    }
+};
 </script>
 
 <template>
-    <Head title="Live Monitoring" />
+    <Head title="Arena Control" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="bb-header-title"><i class="bi bi-activity me-2" style="color: #10b981;"></i>Live Monitoring</h1>
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <h1 class="bb-header-title mb-0"><i class="bi bi-grid-1x2-fill" style="color: #10b981;"></i></h1>
+                <div class="text-end d-none d-sm-block">
+                    <div class="fw-bold fs-4 text-gradient" style="line-height: 1.2;">{{ currentTime }}</div>
+                    <div class="small text-secondary" style="letter-spacing: 0.5px;">{{ currentDate }}</div>
+                </div>
+            </div>
         </template>
+
+        <!-- Filters & Mobile Clock -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex gap-2">
+                <button @click="currentFilter = 'all'" :class="['bb-btn bb-btn--sm', currentFilter === 'all' ? 'bb-btn--success' : 'bb-btn--ghost']">Semua Meja</button>
+                <button @click="currentFilter = 'active'" :class="['bb-btn bb-btn--sm', currentFilter === 'active' ? 'bb-btn--success' : 'bb-btn--ghost']">Sedang Jalan</button>
+                <button @click="currentFilter = 'ready'" :class="['bb-btn bb-btn--sm', currentFilter === 'ready' ? 'bb-btn--success' : 'bb-btn--ghost']">Kosong</button>
+            </div>
+            
+            <div class="d-sm-none text-end">
+                <div class="fw-bold text-gradient fs-5">{{ currentTime }}</div>
+            </div>
+        </div>
 
         <!-- Table Grid -->
         <div class="d-grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));">
-            <div v-for="table in tables" :key="table.id" class="h-100">
-                <div class="bb-table-card w-100 h-100 d-flex flex-column" :class="{ 'bb-table-card--active': table.status === 'active' }">
+            <div v-for="table in filteredTables" :key="table.id" class="h-100">
+                <div @click="handleTableClick(table)" 
+                     class="bb-table-card w-100 h-100 d-flex flex-column" 
+                     :class="{ 'bb-table-card--active': table.status === 'active' }"
+                     style="cursor: pointer;">
                     <div class="p-4 d-flex flex-column flex-grow-1">
                         <!-- Header -->
                         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -156,30 +213,20 @@ const executeCheckout = () => {
                                 </div>
                             </template>
                         </div>
-
-                        <!-- Action Button -->
-                        <div class="mt-auto pt-3">
-                            <button v-if="table.status === 'inactive'" @click="openOrderModal(table)"
-                                class="bb-btn bb-btn--success w-100 py-3">
-                                <i class="bi bi-play-fill"></i> Start Order
-                            </button>
-                            <button v-else @click="confirmStopTable(table)"
-                                class="bb-btn bb-btn--danger bb-btn--sm w-100 mt-auto">
-                                <i class="bi bi-stop-circle"></i> Stop & Checkout
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Empty State -->
-            <div v-if="tables.length === 0" class="col-12">
+            <div v-if="filteredTables.length === 0" class="col-12">
                 <div class="bb-card text-center py-5">
                     <div class="bb-card-body">
                         <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.2;"></i>
-                        <h5 class="mt-3 fw-bold" style="opacity: 0.5;">Belum ada meja</h5>
-                        <p class="text-secondary small mb-3">Tambahkan meja baru melalui menu Kelola Meja</p>
-                        <Link :href="route('tables.index')" class="bb-btn bb-btn--primary">
+                        <h5 class="mt-3 fw-bold" style="opacity: 0.5;">
+                            {{ tables.length === 0 ? 'Belum ada meja' : 'Tidak ada meja di kategori ini' }}
+                        </h5>
+                        <p v-if="tables.length === 0" class="text-secondary small mb-3">Tambahkan meja baru melalui menu Kelola Meja</p>
+                        <Link v-if="tables.length === 0" :href="route('tables.index')" class="bb-btn bb-btn--primary">
                             <i class="bi bi-plus-lg"></i> Tambah Meja
                         </Link>
                     </div>
