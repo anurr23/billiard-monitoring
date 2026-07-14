@@ -29,6 +29,8 @@ class FnbItemController extends Controller
             $validated['image_path'] = $path;
         }
 
+        unset($validated['image']);
+
         FnbItem::create($validated);
         return back()->with('success', 'Menu F&B berhasil ditambahkan.');
     }
@@ -50,6 +52,8 @@ class FnbItemController extends Controller
             $path = $request->file('image')->store('fnb_images', 'public');
             $validated['image_path'] = $path;
         }
+
+        unset($validated['image']);
 
         $fnbItem->update($validated);
         return back()->with('success', 'Menu F&B berhasil diupdate.');

@@ -54,9 +54,9 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
             <!-- Logo -->
             <div class="d-flex justify-content-between align-items-center bb-sidebar-logo">
                 <Link :href="route('dashboard')" class="text-decoration-none d-flex align-items-center gap-3 w-100" @click="closeSidebarMobile">
-                    <div class="bb-logo-icon">B</div>
+                    <img src="/poolstream/public/images/logo.png" alt="PoolStream Logo" style="width: 48px; height: 48px; object-fit: contain;">
                     <div class="bb-logo-text">
-                        Billiar billing
+                        PoolStream
                         <small>Management System</small>
                     </div>
                 </Link>
@@ -72,32 +72,42 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
                     Live Monitoring
                 </Link>
                 
-                <div class="bb-nav-label">Master Data</div>
+                <template v-if="$page.props.auth.user.role === 'admin'">
+                    <div class="bb-nav-label">Master Data</div>
 
-                <Link :href="route('tables.index')" class="bb-nav-link" :class="{ active: route().current('tables.index') }" @click="closeSidebarMobile">
-                    <i class="bi bi-columns-gap"></i>
-                    Kelola Meja
-                </Link>
+                    <Link :href="route('tables.index')" class="bb-nav-link" :class="{ active: route().current('tables.index') }" @click="closeSidebarMobile">
+                        <i class="bi bi-columns-gap"></i>
+                        Kelola Meja
+                    </Link>
 
-                <Link :href="route('packages.index')" class="bb-nav-link" :class="{ active: route().current('packages.index') }" @click="closeSidebarMobile">
-                    <i class="bi bi-tag-fill"></i>
-                    Paket & Harga
-                </Link>
+                    <Link :href="route('packages.index')" class="bb-nav-link" :class="{ active: route().current('packages.index') }" @click="closeSidebarMobile">
+                        <i class="bi bi-tag-fill"></i>
+                        Paket & Harga
+                    </Link>
 
-                <Link :href="route('fnb_items.index')" class="bb-nav-link" :class="{ active: route().current('fnb_items.index') }" @click="closeSidebarMobile">
-                    <i class="bi bi-cup-straw"></i>
-                    Kelola Makanan
-                </Link>
+                    <Link :href="route('fnb_items.index')" class="bb-nav-link" :class="{ active: route().current('fnb_items.index') }" @click="closeSidebarMobile">
+                        <i class="bi bi-cup-straw"></i>
+                        Kelola Makanan
+                    </Link>
+                    
+                    <Link :href="route('users.index')" class="bb-nav-link" :class="{ active: route().current('users.index') }" @click="closeSidebarMobile">
+                        <i class="bi bi-people-fill"></i>
+                        Kelola User
+                    </Link>
+                </template>
             </nav>
 
             <!-- User Section -->
             <div class="bb-sidebar-user">
                 <div class="dropdown">
                     <button class="bb-user-card dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="--bs-dropdown-toggle-icon-transform: none;">
-                        <div class="bb-user-avatar">{{ userInitial }}</div>
+                        <div v-if="$page.props.auth.user.photo_url" class="bb-user-avatar border border-2 border-primary overflow-hidden p-0">
+                            <img :src="$page.props.auth.user.photo_url" class="w-100 h-100 object-fit-cover" alt="User Photo">
+                        </div>
+                        <div v-else class="bb-user-avatar">{{ userInitial }}</div>
                         <div class="bb-user-info">
                             <div class="bb-user-name">{{ userName }}</div>
-                            <div class="bb-user-role">Kasir / Admin</div>
+                            <div class="bb-user-role text-capitalize">{{ $page.props.auth.user.role }}</div>
                         </div>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-2" style="border-radius: 0.75rem; min-width: 200px;">

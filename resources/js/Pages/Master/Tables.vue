@@ -1,35 +1,36 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { Head, useForm, router } from '@inertiajs/vue3';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { useDatatable } from '@/Composables/useDatatable';
 
 const props = defineProps({
-    tables: Array
+    tables: Array,
 });
 
-const { 
-    searchQuery, currentPage, totalPages, paginatedData, nextPage, prevPage 
-} = useDatatable(computed(() => props.tables), ['name']);
+const {
+    searchQuery,
+    currentPage,
+    totalPages,
+    paginatedData,
+    nextPage,
+    prevPage,
+} = useDatatable(props.tables, ['name', 'relay_channel']);
 
 const isEditing = ref(false);
 const editId = ref(null);
+const showModal = ref(false);
 
 const form = useForm({
     name: '',
     relay_channel: ''
 });
 
-const submit = () => {
-    if (isEditing.value) {
-        form.put(route('tables.update', editId.value), {
-            onSuccess: () => cancelEdit()
-        });
-    } else {
-        form.post(route('tables.store'), {
-            onSuccess: () => form.reset(),
-        });
-    }
+const openAddModal = () => {
+    isEditing.value = false;
+    editId.value = null;
+    form.reset();
+    showModal.value = true;
 };
 
 const editTable = (table) => {
@@ -37,20 +38,34 @@ const editTable = (table) => {
     editId.value = table.id;
     form.name = table.name;
     form.relay_channel = table.relay_channel;
+    showModal.value = true;
 };
 
-const cancelEdit = () => {
-    isEditing.value = false;
-    editId.value = null;
-    form.reset();
+const submit = () => {
+    if (isEditing.value) {
+        form.put(route('tables.update', editId.value), {
+            onSuccess: () => closeModal()
+        });
+    } else {
+        form.post(route('tables.store'), {
+            onSuccess: () => closeModal(),
+        });
+    }
+};
+
+const closeModal = () => {
+    showModal.value = false;
+    setTimeout(() => {
+        isEditing.value = false;
+        editId.value = null;
+        form.reset();
+        form.clearErrors();
+    }, 300);
 };
 
 const deleteTable = (id) => {
     if(confirm('Hapus meja ini? Data sesi aktif akan terpengaruh.')) {
         router.delete(route('tables.destroy', id));
-        if(isEditing.value && editId.value === id) {
-            cancelEdit();
-        }
     }
 };
 </script>
@@ -64,49 +79,19 @@ const deleteTable = (id) => {
         </template>
 
         <div class="row g-4">
-            <!-- Add/Edit Form -->
-            <div class="col-lg-4">
-                <div class="bb-card h-100">
-                    <div class="bb-card-header">
-                        <h6 v-if="!isEditing" class="fw-bold mb-0"><i class="bi bi-plus-circle me-2 text-success"></i>Tambah Meja</h6>
-                        <h6 v-else class="fw-bold mb-0"><i class="bi bi-pencil-square me-2 text-warning"></i>Edit Meja</h6>
-                    </div>
-                    <div class="bb-card-body">
-                        <form @submit.prevent="submit">
-                            <div class="mb-3">
-                                <label class="bb-label">Nama Meja</label>
-                                <input type="text" v-model="form.name" required placeholder="Contoh: Meja 5 VIP" class="bb-input" />
-                            </div>
-                            <div class="mb-4">
-                                <label class="bb-label">Relay Channel (Hardware)</label>
-                                <input type="number" v-model="form.relay_channel" required min="1" max="16" placeholder="Channel 1-16" class="bb-input" :class="{'border-danger': form.errors.relay_channel}" />
-                                <div v-if="form.errors.relay_channel" class="small text-danger mt-1">{{ form.errors.relay_channel }}</div>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button v-if="isEditing" type="button" @click="cancelEdit" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
-                                    Batal
-                                </button>
-                                <button type="submit" :disabled="form.processing" class="bb-btn bb-btn--primary flex-grow-1 py-3">
-                                    <i v-if="!isEditing" class="bi bi-plus-lg"></i>
-                                    <i v-else class="bi bi-check-lg"></i>
-                                    Simpan
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
             <!-- Table List -->
-            <div class="col-lg-8">
+            <div class="col-12">
                 <div class="bb-card">
                     <div class="bb-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-3">
                             <h6 class="fw-bold mb-0"><i class="bi bi-list-ul me-2"></i>Daftar Meja</h6>
                             <span class="bb-badge" style="background: rgba(99,102,241,0.1); color: #6366f1;">{{ tables.length }} Meja</span>
                         </div>
-                        <div style="min-width: 200px;">
-                            <input type="text" v-model="searchQuery" placeholder="Cari meja..." class="bb-input form-control-sm py-2" />
+                        <div class="d-flex gap-2 align-items-center" style="min-width: 300px;">
+                            <input type="text" v-model="searchQuery" placeholder="Cari meja..." class="bb-input form-control-sm py-2 flex-grow-1" />
+                            <button @click="openAddModal" class="bb-btn bb-btn--primary py-2 px-3 text-nowrap">
+                                <i class="bi bi-plus-lg me-1"></i> Tambah
+                            </button>
                         </div>
                     </div>
                     <div class="bb-card-body p-0">
@@ -166,6 +151,41 @@ const deleteTable = (id) => {
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Modal -->
+        <div v-if="showModal" class="bb-modal-backdrop" @click.self="closeModal">
+            <div class="bb-modal">
+                <div class="bb-modal-header">
+                    <h5 v-if="!isEditing" class="m-0 bb-text-primary"><i class="bi bi-plus-circle me-2 text-success"></i>Tambah Meja</h5>
+                    <h5 v-else class="m-0 bb-text-primary"><i class="bi bi-pencil-square me-2 text-warning"></i>Edit Meja</h5>
+                    <button type="button" class="btn-close" @click="closeModal"></button>
+                </div>
+                <div class="bb-modal-body">
+                    <form @submit.prevent="submit">
+                        <div class="mb-3">
+                            <label class="bb-label text-secondary">Nama Meja</label>
+                            <input type="text" v-model="form.name" required placeholder="Contoh: Meja 5 VIP" class="bb-input w-100 mt-1" />
+                            <div v-if="form.errors.name" class="small text-danger mt-1">{{ form.errors.name }}</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="bb-label text-secondary">Relay Channel (Hardware)</label>
+                            <input type="number" v-model="form.relay_channel" required min="1" max="16" placeholder="Channel 1-16" class="bb-input w-100 mt-1" :class="{'border-danger': form.errors.relay_channel}" />
+                            <div v-if="form.errors.relay_channel" class="small text-danger mt-1">{{ form.errors.relay_channel }}</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" @click="closeModal" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
+                                Batal
+                            </button>
+                            <button type="submit" :disabled="form.processing" class="bb-btn bb-btn--primary flex-grow-1 py-3">
+                                <i v-if="!isEditing" class="bi bi-plus-lg"></i>
+                                <i v-else class="bi bi-check-lg"></i>
+                                Simpan
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

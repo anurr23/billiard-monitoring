@@ -11,7 +11,9 @@ class TableController extends Controller
 {
     public function index()
     {
-        $tables = Table::all()->sortBy('name', SORT_NATURAL)->values();
+        $tables = Table::with(['transactions' => function($q) {
+            $q->where('status', 'active');
+        }])->get()->sortBy('name', SORT_NATURAL)->values();
         $packages = \App\Models\Package::all();
 
         return Inertia::render('Dashboard', [
@@ -61,17 +63,33 @@ class TableController extends Controller
     public function start(Request $request, $id)
     {
         $request->validate([
+            'customer_name' => 'required|string|max:255',
             'duration_hours' => 'required|numeric|min:0.5',
             'package_id' => 'required'
         ]);
 
         $table = Table::find($id);
-        if ($table) {
+        $package = \App\Models\Package::find($request->package_id);
+
+        if ($table && $package) {
             $table->status = 'active';
-            $table->start_time = Carbon::now();
-            $table->expected_end_time = Carbon::now()->addMinutes($request->duration_hours * 60);
             $table->save();
             
+            // Create Transaction
+            $startTime = Carbon::now();
+            $expectedEndTime = Carbon::now()->addMinutes($request->duration_hours * 60);
+
+            \App\Models\Transaction::create([
+                'table_id' => $table->id,
+                'package_id' => $package->id,
+                'user_id' => \Illuminate\Support\Facades\Auth::id(),
+                'customer_name' => $request->customer_name,
+                'start_time' => $startTime,
+                'expected_end_time' => $expectedEndTime,
+                'billiard_cost' => $package->price * $request->duration_hours,
+                'status' => 'active'
+            ]);
+
             // Execute python script to turn ON relay
             $this->controlRelay($table->relay_channel, 'on');
         }
@@ -84,9 +102,19 @@ class TableController extends Controller
         $table = Table::find($id);
         if ($table) {
             $table->status = 'inactive';
-            $table->start_time = null;
-            $table->end_time = Carbon::now();
             $table->save();
+
+            // Complete Transaction
+            $transaction = \App\Models\Transaction::where('table_id', $table->id)
+                ->where('status', 'active')
+                ->first();
+                
+            if ($transaction) {
+                $transaction->end_time = Carbon::now();
+                $transaction->total_cost = $transaction->billiard_cost + $transaction->fnb_cost;
+                $transaction->status = 'completed';
+                $transaction->save();
+            }
             
             // Execute python script to turn OFF relay
             $this->controlRelay($table->relay_channel, 'off');

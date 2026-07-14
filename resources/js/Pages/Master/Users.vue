@@ -3,56 +3,61 @@ import { ref, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { useDatatable } from '@/Composables/useDatatable';
+import BbSelect from '@/Components/BbSelect.vue';
 
 const props = defineProps({
-    packages: Array
+    users: Array,
 });
 
-const { 
-    searchQuery, currentPage, totalPages, paginatedData, nextPage, prevPage 
-} = useDatatable(computed(() => props.packages), ['name']);
+const {
+    searchQuery,
+    currentPage,
+    totalPages,
+    paginatedData,
+    nextPage,
+    prevPage,
+} = useDatatable(props.users, ['name', 'username', 'role']);
 
 const isEditing = ref(false);
 const editId = ref(null);
 const showModal = ref(false);
 
+const roleOptions = [
+    { value: 'kasir', label: 'Kasir' },
+    { value: 'admin', label: 'Admin' }
+];
+
 const form = useForm({
     name: '',
-    price: ''
+    username: '',
+    role: 'kasir',
+    password: ''
 });
-
-const formattedPrice = ref('');
-
-const handlePriceInput = (e) => {
-    let val = e.target.value.replace(/\D/g, '');
-    form.price = val;
-    formattedPrice.value = val ? new Intl.NumberFormat('id-ID').format(val) : '';
-};
 
 const openAddModal = () => {
     isEditing.value = false;
     editId.value = null;
     form.reset();
-    formattedPrice.value = '';
     showModal.value = true;
 };
 
-const editPackage = (pkg) => {
+const editUser = (user) => {
     isEditing.value = true;
-    editId.value = pkg.id;
-    form.name = pkg.name;
-    form.price = pkg.price;
-    formattedPrice.value = pkg.price ? new Intl.NumberFormat('id-ID').format(pkg.price) : '';
+    editId.value = user.id;
+    form.name = user.name;
+    form.username = user.username;
+    form.role = user.role;
+    form.password = '';
     showModal.value = true;
 };
 
 const submit = () => {
     if (isEditing.value) {
-        form.put(route('packages.update', editId.value), {
+        form.put(route('users.update', editId.value), {
             onSuccess: () => closeModal()
         });
     } else {
-        form.post(route('packages.store'), {
+        form.post(route('users.store'), {
             onSuccess: () => closeModal(),
         });
     }
@@ -64,37 +69,42 @@ const closeModal = () => {
         isEditing.value = false;
         editId.value = null;
         form.reset();
-        formattedPrice.value = '';
         form.clearErrors();
     }, 300);
 };
 
-const deletePackage = (id) => {
-    if(confirm('Hapus paket ini?')) {
-        router.delete(route('packages.destroy', id));
+const deleteUser = (id) => {
+    if(confirm('Hapus user ini?')) {
+        router.delete(route('users.destroy', id), {
+            onError: (errors) => {
+                if(errors.message) {
+                    alert(errors.message);
+                }
+            }
+        });
     }
 };
 </script>
 
 <template>
-    <Head title="Paket & Harga" />
+    <Head title="Kelola User" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="bb-header-title"><i class="bi bi-tag-fill me-2" style="color: #f59e0b;"></i>Paket & Harga</h1>
+            <h1 class="bb-header-title"><i class="bi bi-people-fill me-2" style="color: #6366f1;"></i>Kelola User</h1>
         </template>
 
         <div class="row g-4">
-            <!-- Package List -->
+            <!-- User List -->
             <div class="col-12">
                 <div class="bb-card">
                     <div class="bb-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
-                            <h6 class="fw-bold mb-0"><i class="bi bi-list-ul me-2"></i>Daftar Paket</h6>
-                            <span class="bb-badge" style="background: rgba(245,158,11,0.1); color: #f59e0b;">{{ packages.length }} Paket</span>
+                            <h6 class="fw-bold mb-0"><i class="bi bi-list-ul me-2"></i>Daftar User</h6>
+                            <span class="bb-badge" style="background: rgba(99,102,241,0.1); color: #6366f1;">{{ users.length }} User</span>
                         </div>
                         <div class="d-flex gap-2 align-items-center" style="min-width: 300px;">
-                            <input type="text" v-model="searchQuery" placeholder="Cari paket..." class="bb-input form-control-sm py-2 flex-grow-1" />
+                            <input type="text" v-model="searchQuery" placeholder="Cari user..." class="bb-input form-control-sm py-2 flex-grow-1" />
                             <button @click="openAddModal" class="bb-btn bb-btn--primary py-2 px-3 text-nowrap">
                                 <i class="bi bi-plus-lg me-1"></i> Tambah
                             </button>
@@ -104,35 +114,37 @@ const deletePackage = (id) => {
                         <table class="bb-table">
                             <thead>
                                 <tr>
-                                    <th class="ps-4">Nama Paket</th>
-                                    <th>Harga / Jam</th>
+                                    <th class="ps-4">No</th>
+                                    <th>Nama</th>
+                                    <th>Username</th>
+                                    <th>Role</th>
                                     <th class="text-end pe-4">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="pkg in paginatedData" :key="pkg.id">
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="bb-stat-icon" style="width: 36px; height: 36px; border-radius: 8px; font-size: 0.9rem; background: rgba(245,158,11,0.1); color: #f59e0b;">
-                                                <i class="bi bi-tag"></i>
-                                            </div>
-                                            <span class="fw-bold">{{ pkg.name }}</span>
-                                        </div>
+                                <tr v-for="(user, index) in paginatedData" :key="user.id">
+                                    <td class="ps-4 text-secondary">
+                                        {{ (currentPage - 1) * 10 + index + 1 }}
                                     </td>
+                                    <td class="fw-bold">{{ user.name }}</td>
+                                    <td>{{ user.username }}</td>
                                     <td>
-                                        <span class="fw-bold text-gradient">Rp {{ pkg.price.toLocaleString('id-ID') }}</span>
+                                        <span class="bb-badge text-capitalize" 
+                                            :style="user.role === 'admin' ? 'background: rgba(139,92,246,0.1); color: #8b5cf6;' : 'background: rgba(56,189,248,0.1); color: #38bdf8;'">
+                                            <i class="bi" :class="user.role === 'admin' ? 'bi-shield-lock' : 'bi-person'"></i> {{ user.role }}
+                                        </span>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <button @click="editPackage(pkg)" class="bb-btn bb-btn--ghost py-1 px-3 me-2" style="font-size: 0.8rem; text-transform: none;">
+                                        <button @click="editUser(user)" class="bb-btn bb-btn--ghost py-1 px-3 me-2" style="font-size: 0.8rem; text-transform: none;">
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
-                                        <button @click="deletePackage(pkg.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
+                                        <button v-if="$page.props.auth.user.id !== user.id" @click="deleteUser(user.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
                                             <i class="bi bi-trash3 text-danger"></i>
                                         </button>
                                     </td>
                                 </tr>
                                 <tr v-if="paginatedData.length === 0">
-                                    <td colspan="3" class="text-center py-5" style="opacity: 0.4;">
+                                    <td colspan="5" class="text-center py-5" style="opacity: 0.4;">
                                         <i class="bi bi-inbox d-block mb-2" style="font-size: 2rem;"></i>
                                         Pencarian tidak ditemukan
                                     </td>
@@ -160,21 +172,36 @@ const deletePackage = (id) => {
         <div v-if="showModal" class="bb-modal-backdrop" @click.self="closeModal">
             <div class="bb-modal">
                 <div class="bb-modal-header">
-                    <h5 v-if="!isEditing" class="m-0 bb-text-primary"><i class="bi bi-plus-circle me-2 text-success"></i>Tambah Paket</h5>
-                    <h5 v-else class="m-0 bb-text-primary"><i class="bi bi-pencil-square me-2 text-warning"></i>Edit Paket</h5>
+                    <h5 v-if="!isEditing" class="m-0 bb-text-primary"><i class="bi bi-person-plus-fill me-2 text-success"></i>Tambah User</h5>
+                    <h5 v-else class="m-0 bb-text-primary"><i class="bi bi-pencil-square me-2 text-warning"></i>Edit User</h5>
                     <button type="button" class="btn-close" @click="closeModal"></button>
                 </div>
                 <div class="bb-modal-body">
                     <form @submit.prevent="submit">
                         <div class="mb-3">
-                            <label class="bb-label text-secondary">Nama Paket</label>
-                            <input type="text" v-model="form.name" required placeholder="Contoh: VIP Malam" class="bb-input w-100 mt-1" />
+                            <label class="bb-label text-secondary">Nama Lengkap</label>
+                            <input type="text" v-model="form.name" required placeholder="Contoh: Budi Santoso" class="bb-input w-100 mt-1" />
                             <div v-if="form.errors.name" class="small text-danger mt-1">{{ form.errors.name }}</div>
                         </div>
+                        <div class="mb-3">
+                            <label class="bb-label text-secondary">Username</label>
+                            <input type="text" v-model="form.username" required placeholder="Username unik" class="bb-input w-100 mt-1" :class="{'border-danger': form.errors.username}" />
+                            <div v-if="form.errors.username" class="small text-danger mt-1">{{ form.errors.username }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="bb-label text-secondary">Role</label>
+                            <BbSelect 
+                                v-model="form.role" 
+                                :options="roleOptions" 
+                                :error="!!form.errors.role" 
+                                class="mt-1" 
+                            />
+                            <div v-if="form.errors.role" class="small text-danger mt-1">{{ form.errors.role }}</div>
+                        </div>
                         <div class="mb-4">
-                            <label class="bb-label text-secondary">Harga per Jam (Rp)</label>
-                            <input type="text" :value="formattedPrice" @input="handlePriceInput" required placeholder="50.000" class="bb-input w-100 mt-1" />
-                            <div v-if="form.errors.price" class="small text-danger mt-1">{{ form.errors.price }}</div>
+                            <label class="bb-label text-secondary">Password <span v-if="isEditing" class="text-secondary fw-normal">(Kosongkan jika tidak diubah)</span></label>
+                            <input type="password" v-model="form.password" :required="!isEditing" placeholder="Password min 4 karakter" class="bb-input w-100 mt-1" />
+                            <div v-if="form.errors.password" class="small text-danger mt-1">{{ form.errors.password }}</div>
                         </div>
                         <div class="d-flex gap-2">
                             <button type="button" @click="closeModal" class="bb-btn bb-btn--ghost flex-grow-1 py-3">

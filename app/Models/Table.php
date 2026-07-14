@@ -17,4 +17,9 @@ class Table extends Model
         'end_time' => 'datetime',
         'expected_end_time' => 'datetime',
     ];
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }

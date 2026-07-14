@@ -14,4 +14,9 @@ class FnbItem extends Model
     {
         return $this->image_path ? asset('storage/' . $this->image_path) : null;
     }
+
+    public function transactionItems()
+    {
+        return $this->hasMany(TransactionItem::class, 'fnb_item_id');
+    }
 }

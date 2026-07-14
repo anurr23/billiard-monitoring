@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import BbSelect from '@/Components/BbSelect.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 
@@ -8,16 +9,26 @@ const props = defineProps({
     packages: Array
 });
 
+const packageOptions = computed(() => {
+    return props.packages.map(pkg => ({
+        label: `${pkg.name} — Rp ${pkg.price.toLocaleString('id-ID')}/jam`,
+        value: pkg.id
+    }));
+});
+
 // Modal state
 const showOrderModal = ref(false);
 const selectedTable = ref(null);
 
 const form = useForm({
+    customer_name: '',
     duration_hours: 1,
-    package_id: props.packages.length > 0 ? props.packages[0].id : null,
+    package_id: null,
 });
 
 const openOrderModal = (table) => {
+    form.reset();
+    form.clearErrors();
     selectedTable.value = table;
     showOrderModal.value = true;
 };
@@ -65,8 +76,8 @@ const timers = ref({});
 const updateTimers = () => {
     const newTimers = {};
     props.tables.forEach(table => {
-        if (table.status === 'active' && table.expected_end_time) {
-            newTimers[table.id] = formatCountdown(table.expected_end_time);
+        if (table.status === 'active' && table.transactions && table.transactions.length > 0 && table.transactions[0].expected_end_time) {
+            newTimers[table.id] = formatCountdown(table.transactions[0].expected_end_time);
         }
     });
     timers.value = newTimers;
@@ -81,9 +92,22 @@ onUnmounted(() => {
     clearInterval(interval);
 });
 
-const stopTable = (id) => {
-    if(confirm('Selesaikan sesi meja ini dan lakukan checkout?')) {
-        router.post(route('tables.stop', id));
+const showCheckoutModal = ref(false);
+const selectedTableForCheckout = ref(null);
+
+const confirmStopTable = (table) => {
+    selectedTableForCheckout.value = table;
+    showCheckoutModal.value = true;
+};
+
+const executeCheckout = () => {
+    if (selectedTableForCheckout.value) {
+        router.post(route('tables.stop', selectedTableForCheckout.value.id), {}, {
+            onSuccess: () => {
+                showCheckoutModal.value = false;
+                selectedTableForCheckout.value = null;
+            }
+        });
     }
 };
 </script>
@@ -139,9 +163,9 @@ const stopTable = (id) => {
                                 class="bb-btn bb-btn--success w-100 py-3">
                                 <i class="bi bi-play-fill"></i> Start Order
                             </button>
-                            <button v-else @click="stopTable(table.id)"
-                                class="bb-btn bb-btn--danger w-100 py-3">
-                                <i class="bi bi-stop-fill"></i> Stop & Checkout
+                            <button v-else @click="confirmStopTable(table)"
+                                class="bb-btn bb-btn--danger bb-btn--sm w-100 mt-auto">
+                                <i class="bi bi-stop-circle"></i> Stop & Checkout
                             </button>
                         </div>
                     </div>
@@ -164,7 +188,7 @@ const stopTable = (id) => {
         </div>
 
         <!-- Order Modal -->
-        <div v-if="showOrderModal" class="bb-modal-backdrop" @click.self="closeOrderModal">
+        <div v-if="showOrderModal" class="bb-modal-backdrop">
             <div class="bb-modal">
                 <div class="bb-modal-header">
                     <div>
@@ -180,17 +204,26 @@ const stopTable = (id) => {
                 <div class="bb-modal-body">
                     <form @submit.prevent="submitOrder">
                         <div class="mb-3">
+                            <label class="bb-label">Nama Pelanggan</label>
+                            <input type="text" v-model="form.customer_name" @input="form.customer_name = form.customer_name.replace(/\b\w/g, l => l.toUpperCase())" required class="bb-input" placeholder="Masukkan nama pelanggan..." />
+                            <div v-if="form.errors.customer_name" class="small text-danger mt-1">{{ form.errors.customer_name }}</div>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="bb-label">Durasi (Jam)</label>
                             <input type="number" step="0.5" min="0.5" v-model="form.duration_hours" required class="bb-input" />
+                            <div v-if="form.errors.duration_hours" class="small text-danger mt-1">{{ form.errors.duration_hours }}</div>
                         </div>
 
                         <div class="mb-4">
                             <label class="bb-label">Pilih Paket</label>
-                            <select v-model="form.package_id" required class="bb-input">
-                                <option v-for="pkg in packages" :key="pkg.id" :value="pkg.id">
-                                    {{ pkg.name }} — Rp {{ pkg.price.toLocaleString('id-ID') }}/jam
-                                </option>
-                            </select>
+                            <BbSelect 
+                                v-model="form.package_id" 
+                                :options="packageOptions" 
+                                placeholder="Pilih Paket..."
+                                :error="!!form.errors.package_id"
+                            />
+                            <div v-if="form.errors.package_id" class="small text-danger mt-1">{{ form.errors.package_id }}</div>
                         </div>
 
                         <!-- Price Summary -->
@@ -219,6 +252,37 @@ const stopTable = (id) => {
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checkout Modal -->
+        <div v-if="showCheckoutModal" class="bb-modal-backdrop" @click.self="showCheckoutModal = false">
+            <div class="bb-modal">
+                <div class="bb-modal-header border-bottom-0 pb-0">
+                    <h5 class="m-0 text-white"><i class="bi bi-box-arrow-right me-2 text-danger"></i> Konfirmasi Checkout</h5>
+                    <button type="button" class="btn-close btn-close-white opacity-50" @click="showCheckoutModal = false"></button>
+                </div>
+                <div class="bb-modal-body pt-4">
+                    <div class="text-center mb-4">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10 mb-3" style="width: 64px; height: 64px;">
+                            <i class="bi bi-exclamation-triangle text-danger fs-1"></i>
+                        </div>
+                        <h4 class="text-white mb-2">Selesaikan Sesi?</h4>
+                        <p class="text-secondary mb-0">
+                            Anda yakin ingin menyelesaikan sesi pada <strong class="text-white">{{ selectedTableForCheckout?.name }}</strong>?
+                            Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" @click="showCheckoutModal = false" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
+                            Batal
+                        </button>
+                        <button type="button" @click="executeCheckout" class="bb-btn bb-btn--danger flex-grow-1 py-3">
+                            <i class="bi bi-stop-circle"></i> Ya, Checkout Sekarang
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
