@@ -66,7 +66,7 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
             <!-- Navigation -->
             <nav class="bb-nav">
                 <Link :href="route('dashboard')" class="bb-nav-link" :class="{ active: route().current('dashboard') }" @click="closeSidebarMobile">
-                    <i class="bi bi-grid-1x2-fill"></i>
+                    <i class="bi bi-grid-1x2-fill" style="color: #6366f1;"></i>
                     Live Monitoring
                 </Link>
                 <Link :href="route('fnb-orders.index')" class="bb-nav-link" :class="{ active: route().current('fnb-orders.index') }" @click="closeSidebarMobile">
@@ -78,22 +78,22 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
                     <div class="bb-nav-label">Master Data</div>
 
                     <Link :href="route('tables.index')" class="bb-nav-link" :class="{ active: route().current('tables.index') }" @click="closeSidebarMobile">
-                        <i class="bi bi-columns-gap"></i>
+                        <i class="bi bi-columns-gap" style="color: #10b981;"></i>
                         Kelola Meja
                     </Link>
 
                     <Link :href="route('packages.index')" class="bb-nav-link" :class="{ active: route().current('packages.index') }" @click="closeSidebarMobile">
-                        <i class="bi bi-tag-fill"></i>
+                        <i class="bi bi-tag-fill" style="color: #f59e0b;"></i>
                         Paket & Harga
                     </Link>
 
                     <Link :href="route('fnb_items.index')" class="bb-nav-link" :class="{ active: route().current('fnb_items.index') }" @click="closeSidebarMobile">
-                        <i class="bi bi-cup-straw"></i>
+                        <i class="bi bi-cup-straw" style="color: #f97316;"></i>
                         Kelola Makanan
                     </Link>
                     
                     <Link :href="route('users.index')" class="bb-nav-link" :class="{ active: route().current('users.index') }" @click="closeSidebarMobile">
-                        <i class="bi bi-people-fill"></i>
+                        <i class="bi bi-people-fill" style="color: #8b5cf6;"></i>
                         Kelola User
                     </Link>
                 </template>

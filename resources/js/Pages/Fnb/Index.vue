@@ -11,6 +11,10 @@ const props = defineProps({
     fnbOrders: {
         type: Array,
         default: () => []
+    },
+    fnbHistory: {
+        type: Array,
+        default: () => []
     }
 });
 
@@ -83,6 +87,25 @@ const filteredActiveFnbOrders = computed(() => {
     let orders = props.fnbOrders;
     if (fnbActiveSearch.value.trim()) {
         const q = fnbActiveSearch.value.toLowerCase();
+        orders = orders.filter(o => (o.customer_name || '').toLowerCase().includes(q));
+    }
+    return orders;
+});
+
+const orderTab = ref('active');
+const fnbHistorySearch = ref('');
+
+const queuedFnbOrders = computed(() => {
+    return [...filteredActiveFnbOrders.value].reverse().map((order, index) => ({
+        ...order,
+        queueNumber: index + 1,
+    }));
+});
+
+const filteredFnbHistory = computed(() => {
+    let orders = props.fnbHistory;
+    if (fnbHistorySearch.value.trim()) {
+        const q = fnbHistorySearch.value.toLowerCase();
         orders = orders.filter(o => (o.customer_name || '').toLowerCase().includes(q));
     }
     return orders;
@@ -389,59 +412,131 @@ const printReceipt = (transaction) => {
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
-                <i class="bi bi-list-ul"></i> Daftar Pesanan F&B Aktif
-            </h5>
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex gap-1 p-1 rounded-3" style="background: rgba(255,255,255,0.04);">
+                    <button @click="orderTab = 'active'"
+                            :class="['bb-btn bb-btn--sm px-3', orderTab === 'active' ? 'bb-btn--warning' : 'bb-btn--ghost']">
+                        <i class="bi bi-play-fill me-1"></i> Aktif
+                        <span v-if="fnbOrders.length > 0" class="badge rounded-pill ms-1" style="background: rgba(255,255,255,0.15); font-size: 0.65rem;">{{ fnbOrders.length }}</span>
+                    </button>
+                    <button @click="orderTab = 'history'"
+                            :class="['bb-btn bb-btn--sm px-3', orderTab === 'history' ? 'bb-btn--warning' : 'bb-btn--ghost']">
+                        <i class="bi bi-clock-history me-1"></i> Riwayat
+                        <span v-if="fnbHistory.length > 0" class="badge rounded-pill ms-1" style="background: rgba(255,255,255,0.15); font-size: 0.65rem;">{{ fnbHistory.length }}</span>
+                    </button>
+                </div>
+            </div>
             <div class="d-flex align-items-center gap-3">
                 <div class="position-relative" style="max-width: 280px; width: 100%;">
-                    <input type="text" v-model="fnbActiveSearch" class="bb-input py-2 px-3" placeholder="Cari pelanggan..." style="font-size: 0.85rem; padding-left: 2.5rem !important;" />
+                    <input v-if="orderTab === 'active'" type="text" v-model="fnbActiveSearch" class="bb-input py-2 px-3" placeholder="Cari pelanggan..." style="font-size: 0.85rem; padding-left: 2.5rem !important;" />
+                    <input v-else type="text" v-model="fnbHistorySearch" class="bb-input py-2 px-3" placeholder="Cari riwayat..." style="font-size: 0.85rem; padding-left: 2.5rem !important;" />
                     <i class="bi bi-search position-absolute top-50 translate-middle-y text-secondary opacity-75" style="left: 1rem; font-size: 0.85rem;"></i>
                 </div>
-                <button @click="openFnbOrderModal" class="bb-btn bb-btn--sm bb-btn--warning flex-shrink-0">
+                <button v-if="orderTab === 'active'" @click="openFnbOrderModal" class="bb-btn bb-btn--sm bb-btn--warning flex-shrink-0">
                     <i class="bi bi-plus-lg me-1"></i> Pesanan Baru
                 </button>
             </div>
         </div>
 
-        <div v-if="filteredActiveFnbOrders.length > 0" class="row g-3">
-            <div v-for="order in filteredActiveFnbOrders" :key="order.id" class="col-12 col-md-6 col-xl-4">
-                <div @click="openFnbDetailModal(order)"
-                     class="bb-card overflow-hidden" style="cursor: pointer; border-top: 3px solid #f59e0b; transition: all 0.25s ease;"
-                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.15)'"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow=''">
-                    <div class="p-3">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 42px; height: 42px; background: rgba(245,158,11,0.12);">
-                                <i class="bi bi-person-fill" style="font-size: 1.2rem; color: #f59e0b;"></i>
-                            </div>
-                            <div class="flex-grow-1 overflow-hidden">
-                                <div class="fw-bold text-truncate" style="font-size: 1rem;">{{ order.customer_name }}</div>
-                                <div class="text-secondary" style="font-size: 0.8rem;">
-                                    <i class="bi bi-clock me-1"></i>{{ formatDate(order.start_time || order.created_at) }}
+        <!-- Active Orders -->
+        <div v-if="orderTab === 'active'">
+            <div v-if="queuedFnbOrders.length > 0" class="row g-3">
+                <div v-for="order in queuedFnbOrders" :key="order.id" class="col-12 col-md-4 col-xl-3">
+                    <div @click="openFnbDetailModal(order)"
+                         class="bb-card overflow-hidden" style="cursor: pointer; border-top: 3px solid #f59e0b; transition: all 0.25s ease;"
+                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.15)'"
+                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow=''">
+                        <div class="p-3">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold" 
+                                     style="width: 42px; height: 42px; background: rgba(245,158,11,0.12); color: #f59e0b; font-size: 1.1rem;">
+                                    {{ order.queueNumber }}
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="fw-bold text-truncate" style="font-size: 1rem;">{{ order.customer_name }}</div>
+                                    <div class="text-secondary" style="font-size: 0.8rem;">
+                                        <i class="bi bi-clock me-1"></i>{{ formatDate(order.start_time || order.created_at) }}
+                                    </div>
+                                </div>
+                                <div class="text-end flex-shrink-0">
+                                    <div class="fw-bold fs-5" style="color: #f59e0b;">{{ formatRupiah(order.fnb_cost || 0) }}</div>
                                 </div>
                             </div>
-                            <div class="text-end flex-shrink-0">
-                                <div class="fw-bold fs-5" style="color: #f59e0b;">{{ formatRupiah(order.fnb_cost || 0) }}</div>
+                            <div class="d-flex align-items-center gap-3 pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
+                                <span class="small text-secondary">
+                                    <i class="bi bi-cup-hot me-1"></i>{{ order.items?.length || 0 }} item
+                                </span>
+                                <span class="small text-secondary">
+                                    <i class="bi bi-basket me-1"></i>{{ order.items?.reduce((s, i) => s + i.quantity, 0) || 0 }} qty
+                                </span>
+                                <span class="ms-auto">
+                                    <i class="bi bi-chevron-right" style="color: #f59e0b;"></i>
+                                </span>
                             </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-3 pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
-                            <span class="small text-secondary">
-                                <i class="bi bi-cup-hot me-1"></i>{{ order.items?.length || 0 }} item
-                            </span>
-                            <span class="small text-secondary">
-                                <i class="bi bi-basket me-1"></i>{{ order.items?.reduce((s, i) => s + i.quantity, 0) || 0 }} qty
-                            </span>
-                            <span class="ms-auto">
-                                <i class="bi bi-chevron-right" style="color: #f59e0b;"></i>
-                            </span>
                         </div>
                     </div>
                 </div>
             </div>
+            <div v-else class="text-center py-5 text-secondary opacity-50 border rounded-4" style="border-color: rgba(255,255,255,0.05) !important;">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                Tidak ada pesanan aktif
+            </div>
         </div>
-        <div v-else class="text-center py-5 text-secondary opacity-50 border rounded-4" style="border-color: rgba(255,255,255,0.05) !important;">
-            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-            Tidak ada pesanan aktif
+
+        <!-- History Orders -->
+        <div v-if="orderTab === 'history'">
+            <div v-if="filteredFnbHistory.length > 0" class="row g-3">
+                <div v-for="order in filteredFnbHistory" :key="order.id" class="col-12 col-md-4 col-xl-3">
+                    <div @click="openFnbDetailModal(order)"
+                         class="bb-card overflow-hidden" style="cursor: pointer; transition: all 0.25s ease;"
+                         :style="{ borderTop: order.status === 'completed' ? '3px solid #10b981' : '3px solid #6c757d' }"
+                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.15)'"
+                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow=''">
+                        <div class="p-3">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                     :style="{
+                                        width: '42px', height: '42px',
+                                        background: order.status === 'completed' ? 'rgba(16,185,129,0.1)' : 'rgba(108,117,125,0.1)'
+                                     }">
+                                    <i class="bi" :class="order.status === 'completed' ? 'bi-check2-circle' : 'bi-x-circle'"
+                                       :style="{ fontSize: '1.2rem', color: order.status === 'completed' ? '#10b981' : '#6c757d' }"></i>
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="fw-bold text-truncate" style="font-size: 1rem;">{{ order.customer_name }}</div>
+                                        <span class="badge rounded-pill flex-shrink-0" :class="order.status === 'completed' ? 'bg-success' : 'bg-secondary'" style="font-size: 0.6rem; letter-spacing: 0.5px;">
+                                            {{ order.status === 'completed' ? 'SELESAI' : 'BATAL' }}
+                                        </span>
+                                    </div>
+                                    <div class="text-secondary" style="font-size: 0.8rem;">
+                                        <i :class="order.status === 'completed' ? 'bi bi-check-circle' : 'bi bi-clock'" class="me-1"></i>{{ formatDate(order.end_time || order.start_time || order.created_at) }}
+                                    </div>
+                                </div>
+                                <div class="text-end flex-shrink-0">
+                                    <div class="fw-bold fs-5" :style="{ color: order.status === 'completed' ? '#10b981' : '#6c757d' }">{{ formatRupiah(order.fnb_cost || 0) }}</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
+                                <span class="small text-secondary">
+                                    <i class="bi bi-cup-hot me-1"></i>{{ order.items?.length || 0 }} item
+                                </span>
+                                <span class="small text-secondary">
+                                    <i class="bi bi-basket me-1"></i>{{ order.items?.reduce((s, i) => s + i.quantity, 0) || 0 }} qty
+                                </span>
+                                <span class="ms-auto">
+                                    <i v-if="order.status === 'completed'" class="bi bi-check2-circle" style="color: #10b981;"></i>
+                                    <i v-else class="bi bi-dash-circle" style="color: #6c757d;"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-center py-5 text-secondary opacity-50 border rounded-4" style="border-color: rgba(255,255,255,0.05) !important;">
+                <i class="bi bi-clock-history fs-1 d-block mb-2"></i>
+                Belum ada riwayat pesanan
+            </div>
         </div>
 
         <!-- ═══════════════════════════════════════════════════ -->
@@ -577,19 +672,26 @@ const printReceipt = (transaction) => {
         </div>
 
         <!-- ═══════════════════════════════════════════════════ -->
-        <!-- F&B Order Detail Modal (Standalone)                -->
+        <!-- F&B Order Detail Modal (Active + History)          -->
         <!-- ═══════════════════════════════════════════════════ -->
         <div v-if="showFnbDetailModal && selectedFnbOrder" class="bb-modal-backdrop">
-            <div class="bb-modal" style="max-width: 900px; width: 95%;">
+            <div class="bb-modal" :style="{ maxWidth: selectedFnbOrder.status === 'active' ? '900px' : '600px', width: '95%' }">
                 <!-- Header -->
                 <div class="bb-modal-header">
                     <div>
-                        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-cup-hot-fill" style="color: #f59e0b;"></i>
-                            Pesanan F&B — {{ selectedFnbOrder.customer_name }}
-                        </h5>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-cup-hot-fill" style="color: #f59e0b;"></i>
+                                {{ selectedFnbOrder.customer_name }}
+                            </h5>
+                            <span v-if="selectedFnbOrder.status !== 'active'" class="badge rounded-pill" :class="selectedFnbOrder.status === 'completed' ? 'bg-success' : 'bg-secondary'" style="font-size: 0.6rem; letter-spacing: 0.5px;">
+                                {{ selectedFnbOrder.status === 'completed' ? 'SELESAI' : 'BATAL' }}
+                            </span>
+                            <span v-else class="badge rounded-pill bg-warning" style="font-size: 0.6rem; letter-spacing: 0.5px;">PROSES</span>
+                        </div>
                         <div class="d-flex gap-3 mt-1 small text-secondary">
                             <span><i class="bi bi-clock me-1"></i>{{ formatDate(selectedFnbOrder.start_time || selectedFnbOrder.created_at) }}</span>
+                            <span v-if="selectedFnbOrder.end_time"><i class="bi bi-check-circle me-1"></i>{{ formatDate(selectedFnbOrder.end_time) }}</span>
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2">
@@ -601,10 +703,11 @@ const printReceipt = (transaction) => {
                         </button>
                     </div>
                 </div>
-                <div class="bb-modal-body p-4 formodal">
+
+                <!-- Active: Editable Layout -->
+                <div v-if="selectedFnbOrder.status === 'active'" class="bb-modal-body p-4">
                     <form @submit.prevent>
                         <div class="row g-4">
-                            <!-- Left: F&B Menu -->
                             <div class="col-md-7 border-end" style="border-color: rgba(255,255,255,0.1) !important;">
                                 <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle text-warning me-2"></i>Tambah Item</h6>
                                 <div class="mb-3 d-flex gap-2">
@@ -651,7 +754,6 @@ const printReceipt = (transaction) => {
                                 </div>
                             </div>
 
-                            <!-- Right: Order Items -->
                             <div class="col-md-5">
                                 <h6 class="fw-bold mb-3 d-flex justify-content-between align-items-center">
                                     Daftar Item
@@ -703,6 +805,41 @@ const printReceipt = (transaction) => {
                             </div>
                         </div>
                     </form>
+                </div>
+
+                <!-- History: Read-only Layout -->
+                <div v-else class="bb-modal-body p-4" style="min-height: 200px;">
+                    <div v-if="selectedFnbOrder?.items?.length > 0" class="d-flex flex-column gap-2 mb-4">
+                        <div v-for="item in selectedFnbOrder.items" :key="item.id" class="p-3 rounded-3 d-flex justify-content-between align-items-center" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-cup-hot" style="font-size: 1.2rem; opacity: 0.3;"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold small">{{ item.fnb_item?.name || 'Item' }}</div>
+                                    <div class="text-secondary" style="font-size: 0.72rem;">
+                                        {{ formatRupiah(item.price) }} × {{ item.quantity }}
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="fw-bold small" style="color: #f59e0b;">{{ formatRupiah(item.subtotal) }}</span>
+                        </div>
+                    </div>
+                    <div v-else class="text-center py-4 text-secondary opacity-50">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        <div class="small">Tidak ada item</div>
+                    </div>
+
+                    <div class="p-3 rounded-4 mb-4" style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold" style="color: #f59e0b;">Total</span>
+                            <span class="fw-bold fs-5" style="color: #f59e0b;">{{ formatRupiah(selectedFnbOrder.fnb_cost || 0) }}</span>
+                        </div>
+                    </div>
+
+                    <button type="button" @click="closeFnbDetailModal" class="bb-btn bb-btn--ghost w-100 py-3">
+                        Tutup
+                    </button>
                 </div>
             </div>
         </div>

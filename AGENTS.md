@@ -18,8 +18,8 @@ Tests use **in-memory SQLite** (configured in `phpunit.xml`). No external servic
 
 - **Frontend:** Vue 3 pages in `resources/js/Pages/`, resolved via Inertia. Components in `resources/js/Components/`. Custom SCSS in `resources/scss/app.scss` using `bb-` prefixed class names (Bootstrap 5 theme).
 - **Backend:** Controllers in `app/Http/Controllers/`. Models in `app/Models/`. Middleware `CheckRole` at `app/Http/Middleware/CheckRole.php` — registered as `role` alias in `bootstrap/app.php`.
-- **Routes:** `routes/web.php` (app routes), `routes/auth.php` (Breeze auth). Admin routes under `role:admin` middleware at `/master/*`.
-- **Database:** SQLite at `database/database.sqlite`. Migrations in `database/migrations/`.
+- **Routes:** `routes/web.php` (app routes), `routes/auth.php` (Breeze auth). Admin routes under `role:admin` middleware at `/master/*`. Transaction item routes: store (`POST`), update quantity (`PATCH` with `change` param), destroy (`DELETE`).
+- **Database:** SQLite at `database/database.sqlite`. Migrations in `database/migrations/`. Seed data includes 2 users (admin/kasir), 3 packages, 16 tables, 28 F&B items.
 - **Hardware:** `app/Services/relay_controller.py` — Python script for USB HID relay control, called via `shell_exec` from `TableController` and `AutoCheckoutExpiredTables`.
 - **Scheduled command:** `tables:auto-checkout` auto-completes transactions past `expected_end_time` and turns off relays. Runs every minute.
 
@@ -40,6 +40,7 @@ Tests use **in-memory SQLite** (configured in `phpunit.xml`). No external servic
 
 ## Conventions
 
+- Sidebar uses **fixed overlay** (`position: fixed`, `transform: translateX`) across all screen sizes, not a push layout.
 - Laravel Pint is available but no custom config — uses defaults.
 - 4-space indent, LF line endings (`.editorconfig`).
 - Vue pages use `<script setup>` (Composition API). No TypeScript. Path alias: `@/` → `resources/js/`.

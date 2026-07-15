@@ -21,9 +21,17 @@ class FnbOrderController extends Controller
             ->latest()
             ->get();
 
+        $fnbHistory = Transaction::fnbOnly()
+            ->whereIn('status', ['completed', 'cancelled'])
+            ->with('items.fnbItem')
+            ->latest()
+            ->limit(50)
+            ->get();
+
         return Inertia::render('Fnb/Index', [
             'fnbItems' => $fnbItems,
             'fnbOrders' => $fnbOrders,
+            'fnbHistory' => $fnbHistory,
         ]);
     }
 

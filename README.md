@@ -1,7 +1,5 @@
 <p align="center">
   <br>
-  <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="200" alt="Laravel Logo">
-  <br>
   <h1 align="center">🎱 PoolStream</h1>
   <p align="center">
     <strong>Billiard & Lounge Management System</strong>
@@ -10,68 +8,54 @@
 
 ---
 
-## 📖 About PoolStream
+## 📖 About
 
-**PoolStream** is a modern, comprehensive management application tailored specifically for billiard halls and lounges. Built on top of the robust Laravel 13 framework and powered by an interactive Vue 3 (Inertia.js) frontend, it provides an all-in-one solution for handling billiard table sessions, Food & Beverage (F&B) transactions, and automated hardware control (lighting relays).
+**PoolStream** is a billiard hall management application built with Laravel 13 + Inertia.js + Vue 3 + Bootstrap 5. It handles table session management, F&B ordering, automated relay hardware control, and receipt printing.
 
-The system prioritizes speed, ease of use, and a beautiful UI, allowing cashiers (*Kasir*) to effortlessly manage incoming customers, while offering administrators complete control over inventory, pricing, and system users.
+## ✨ Features
 
-## ✨ Key Features
+- 🕒 **Table Session Management** — Start, monitor, and check out billiard sessions with live countdown timers and auto-checkout for expired sessions.
+- 🍔 **Integrated F&B Ordering** — Order food and drinks from tables or as standalone orders. Edit quantities or remove items while orders are active.
+- 💡 **Automated Hardware Control** — USB HID relay integration (Python) to turn table lights on/off with session start/end.
+- 💳 **Smart Checkout & Receipts** — Detailed receipts combining billiard and F&B costs. Printable via browser.
+- 🌓 **Dynamic Theming** — Light and Dark modes with Bootstrap 5 custom SCSS.
+- 🛡️ **Role-Based Access** — `admin` (full access) and `kasir` (cashier, dashboard only).
+- 📱 **Responsive Layout** — Overlay sidebar works across desktop, tablet, and mobile.
 
-- 🕒 **Table Session Management**: Start, monitor, and edit active billiard sessions seamlessly. Time tracking is precise and automated.
-- 🍔 **Integrated F&B Ordering**: Customers can order food and drinks directly to their active billiard tables or independently. Total costs are automatically aggregated upon checkout.
-- 💡 **Automated Hardware Control**: Integrates directly with USB HID relays (via Python script) to automatically turn on table lights when a session starts and turn them off when it ends.
-- 💳 **Smart Checkout & Receipt Printing**: Generates detailed, neatly formatted receipts summarizing both billiard playtime and F&B consumption.
-- 🌓 **Dynamic Theming**: Features a gorgeous, responsive UI supporting both Light and Dark modes.
-- 🛡️ **Role-Based Access**: Secure role separation between `admin` (full access) and `kasir` (dashboard operations only).
+## 🛠️ Stack
 
-## 🛠️ Technology Stack
+- **Backend:** Laravel 13 (PHP 8.3+)
+- **Frontend:** Vue 3 (Composition API) + Inertia.js
+- **Styling:** Bootstrap 5 (Custom SCSS with `bb-` prefix)
+- **Database:** SQLite
+- **Hardware:** Python (PyUSB for relay control)
 
-- **Backend**: Laravel 13 (PHP)
-- **Frontend**: Vue 3 (Composition API) + Inertia.js
-- **Styling**: Bootstrap 5 (Custom SCSS Theming)
-- **Database**: SQLite (Zero-configuration database)
-- **Hardware Integration**: Python (PyUSB for relay control)
+## 🚀 Setup
 
-## 🚀 Installation & Setup
+```bash
+composer setup
+composer dev
+```
 
-PoolStream is designed to be extremely easy to set up.
+Then access `http://localhost:8000`. Login uses **username**, not email.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/anurr23/billiard-monitoring.git
-   cd billiard-monitoring
-   ```
+Default accounts seeded: `admin` / `kasir` — both with password `password`.
 
-2. **Run the initial setup:**
-   PoolStream includes a custom composer script that handles full initialization (copying `.env`, generating keys, migrating the database, and building NPM assets).
-   ```bash
-   composer setup
-   ```
+## 📁 Structure
 
-3. **Start the Development Server:**
-   This command concurrently runs the PHP development server, queue worker, and Vite asset bundler.
-   ```bash
-   composer dev
-   ```
+- `app/Http/Controllers/` — Controllers for tables, transactions, F&B, users
+- `app/Models/` — Eloquent models (User, Table with UUIDs; Transaction auto-increment)
+- `app/Console/Commands/AutoCheckoutExpiredTables.php` — scheduled auto-checkout
+- `app/Services/relay_controller.py` — USB HID relay bridge
+- `resources/js/Pages/` — Inertia Vue 3 pages
+- `resources/js/Components/` — Shared Vue components (`BbSelect`, modal, form elements)
+- `resources/scss/app.scss` — Custom Bootstrap 5 theme
 
-4. **Login:**
-   Access the app at `http://localhost:8000`. Login using your configured username and password (note: authentication uses the `username` field).
+## 🔒 Roles
 
-## 📂 Project Structure
-
-- `app/Http/Controllers/`: Contains the core logic for transactions, table management, and user roles.
-- `app/Models/`: Eloquent models (Uses UUIDs for primary entities like `User` and `Table`).
-- `app/Services/relay_controller.py`: The Python hardware bridge for controlling table lighting.
-- `database/database.sqlite`: The primary data store.
-- `resources/js/Pages/`: Vue 3 frontend components, routed via Inertia.
-- `resources/scss/app.scss`: Centralized styling and theme tokens (Bootstrap 5 customizations).
-
-## 🔒 Roles & Permissions
-
-- **Admin**: Has access to `/master/*` routes to manage users, add/remove tables, update F&B inventory, and configure pricing packages.
-- **Kasir (Cashier)**: Restricted to the main dashboard to handle daily operations, table checkout, and F&B orders. Users cannot delete their own accounts.
+- **Admin** — `/master/*` routes: manage tables, packages, F&B items, users
+- **Kasir** — Dashboard: handle sessions, F&B orders, checkout
 
 ## 📄 License
 
-This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT
