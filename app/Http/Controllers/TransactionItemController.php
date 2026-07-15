@@ -55,10 +55,10 @@ class TransactionItemController extends Controller
     }
 
     /**
-     * Increment item quantity by 1.
-     * Items cannot be removed or decreased — only added.
+     * Update item quantity by a change value (default +1).
+     * If quantity reaches 0, the item is removed.
      */
-    public function updateQuantity(TransactionItem $item)
+    public function updateQuantity(Request $request, TransactionItem $item)
     {
         $transaction = $item->transaction;
 
@@ -66,13 +66,39 @@ class TransactionItemController extends Controller
             return back()->with('error', 'Transaksi sudah tidak aktif.');
         }
 
-        $item->quantity += 1;
+        $change = (int) $request->input('change', 1);
+        $newQty = $item->quantity + $change;
+
+        if ($newQty <= 0) {
+            $item->delete();
+            $this->recalculateCosts($transaction);
+            return back()->with('success', 'Item berhasil dihapus.');
+        }
+
+        $item->quantity = $newQty;
         $item->subtotal = $item->price * $item->quantity;
         $item->save();
 
         $this->recalculateCosts($transaction);
 
-        return back()->with('success', 'Jumlah berhasil ditambah.');
+        return back()->with('success', 'Jumlah berhasil diubah.');
+    }
+
+    /**
+     * Remove an item from a transaction entirely.
+     */
+    public function destroy(TransactionItem $item)
+    {
+        $transaction = $item->transaction;
+
+        if ($transaction->status !== 'active') {
+            return back()->with('error', 'Transaksi sudah tidak aktif.');
+        }
+
+        $item->delete();
+        $this->recalculateCosts($transaction);
+
+        return back()->with('success', 'Item berhasil dihapus.');
     }
 
     /**

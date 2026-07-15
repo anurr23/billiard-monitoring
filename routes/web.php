@@ -24,8 +24,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // F&B items on active transactions
     Route::post('/transactions/{transaction}/items', [TransactionItemController::class, 'store'])->name('transaction-items.store');
     Route::patch('/transaction-items/{item}/add', [TransactionItemController::class, 'updateQuantity'])->name('transaction-items.add');
+    Route::patch('/transaction-items/{item}', [TransactionItemController::class, 'updateQuantity'])->name('transaction-items.update-quantity');
+    Route::delete('/transaction-items/{item}', [TransactionItemController::class, 'destroy'])->name('transaction-items.destroy');
 
     // F&B standalone orders
+    Route::get('/fnb-orders', [FnbOrderController::class, 'index'])->name('fnb-orders.index');
     Route::post('/fnb-orders', [FnbOrderController::class, 'store'])->name('fnb-orders.store');
     Route::post('/fnb-orders/{transaction}/checkout', [FnbOrderController::class, 'checkout'])->name('fnb-orders.checkout');
 

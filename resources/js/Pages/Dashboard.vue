@@ -16,10 +16,6 @@ const props = defineProps({
     fnbItems: {
         type: Array,
         default: () => []
-    },
-    fnbOrders: {
-        type: Array,
-        default: () => []
     }
 });
 
@@ -116,16 +112,6 @@ const removeDraftTableOrder = (index) => {
 
 const tableOrderFnbTotal = computed(() => {
     return form.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-});
-
-const fnbActiveSearch = ref('');
-const filteredActiveFnbOrders = computed(() => {
-    let orders = props.fnbOrders;
-    if (fnbActiveSearch.value.trim()) {
-        const q = fnbActiveSearch.value.toLowerCase();
-        orders = orders.filter(o => (o.customer_name || '').toLowerCase().includes(q));
-    }
-    return orders;
 });
 
 // ─── Timer / Countdown ──────────────────────────────────
@@ -335,107 +321,6 @@ const executeCheckout = () => {
                 });
             }
             closeSessionModal();
-        }
-    });
-};
-
-// ─── F&B Standalone Order ───────────────────────────────
-const showFnbOrderModal = ref(false);
-const fnbOrderForm = useForm({
-    customer_name: '',
-    items: [],
-});
-
-const openFnbOrderModal = () => {
-    fnbOrderForm.reset();
-    fnbOrderForm.clearErrors();
-    fnbSearch.value = '';
-    fnbCategoryFilter.value = 'all';
-    showFnbOrderModal.value = true;
-};
-
-const closeFnbOrderModal = () => {
-    showFnbOrderModal.value = false;
-    fnbOrderForm.reset();
-};
-
-const addDraftToFnbOrder = (item) => {
-    const existing = fnbOrderForm.items.find(i => i.fnb_item_id === item.id);
-    if (existing) {
-        existing.quantity++;
-    } else {
-        fnbOrderForm.items.push({
-            fnb_item_id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: 1
-        });
-    }
-};
-
-const incrementDraftFnbOrder = (index) => {
-    fnbOrderForm.items[index].quantity++;
-};
-
-const removeDraftFnbOrder = (index) => {
-    fnbOrderForm.items.splice(index, 1);
-};
-
-const fnbOrderDraftTotal = computed(() => {
-    return fnbOrderForm.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-});
-
-const submitFnbOrder = () => {
-    if (!fnbOrderForm.customer_name.trim()) {
-        alert('Nama pelanggan wajib diisi!');
-        return;
-    }
-    if (fnbOrderForm.items.length === 0) {
-        alert('Pesanan F&B tidak boleh kosong!');
-        return;
-    }
-    if (fnbOrderForm.items.some(i => i.quantity < 1)) {
-        alert('Quantity pesanan minimal 1!');
-        return;
-    }
-    
-    fnbOrderForm.post(route('fnb-orders.store'), {
-        onSuccess: () => {
-            closeFnbOrderModal();
-        }
-    });
-};
-
-// ─── F&B Order Detail Modal ─────────────────────────────
-const showFnbDetailModal = ref(false);
-const selectedFnbOrder = ref(null);
-const fnbDetailTab = ref('fnb'); // 'fnb' | 'orders' | 'checkout'
-
-const openFnbDetailModal = (order) => {
-    selectedFnbOrder.value = order;
-    fnbDetailTab.value = 'fnb';
-    fnbSearch.value = '';
-    fnbCategoryFilter.value = 'all';
-    showFnbDetailModal.value = true;
-};
-
-const closeFnbDetailModal = () => {
-    showFnbDetailModal.value = false;
-    selectedFnbOrder.value = null;
-};
-
-const checkoutFnbOrder = () => {
-    if (!selectedFnbOrder.value) return;
-    const order = selectedFnbOrder.value;
-    router.post(route('fnb-orders.checkout', order.id), {}, {
-        onSuccess: () => {
-            printReceipt({
-                ...order,
-                type: 'fnb_only',
-                end_time: new Date().toISOString(),
-                status: 'completed',
-            });
-            closeFnbDetailModal();
         }
     });
 };
@@ -667,9 +552,6 @@ const printReceipt = (transaction) => {
             </div>
             
             <div class="d-flex align-items-center gap-3 ms-auto">
-                <button @click="openFnbOrderModal" class="bb-btn bb-btn--sm bb-btn--warning">
-                    <i class="bi bi-cup-hot-fill me-1"></i> Pesan F&B
-                </button>
                 <div class="d-sm-none text-end">
                     <div class="fw-bold text-gradient fs-5">{{ currentTime }}</div>
                 </div>
@@ -678,7 +560,7 @@ const printReceipt = (transaction) => {
 
         <div class="row align-items-start g-4">
             <!-- Left Side: Table Grid -->
-            <div class="col-12 col-xl-9">
+            <div class="col-12">
                 <!-- Table Grid -->
                 <div class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));">
                     <div v-for="table in filteredTables" :key="table.id" class="h-100">
@@ -741,58 +623,6 @@ const printReceipt = (transaction) => {
                                     <i class="bi bi-plus-lg"></i> Tambah Meja
                                 </Link>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Right Side: Active F&B Orders Panel -->
-            <div class="col-12 col-xl-3">
-                <div class="bb-card position-sticky" style="top: 20px; border-top: 3px solid #f59e0b;">
-                    <div class="bb-card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
-                                <i class="bi bi-cup-hot-fill" style="color: #f59e0b;"></i> F&B Aktif
-                            </h6>
-                            <span class="badge rounded-pill px-2 py-1" style="background: rgba(245,158,11,0.15); color: #f59e0b; font-size: 0.7rem;">{{ filteredActiveFnbOrders.length }}</span>
-                        </div>
-                        
-                        <!-- Search Bar -->
-                        <div class="mb-3">
-                            <div class="position-relative">
-                                <input type="text" v-model="fnbActiveSearch" class="bb-input py-1.5 px-3" placeholder="Cari pelanggan..." style="font-size: 0.78rem; padding-left: 2.2rem !important;" />
-                                <i class="bi bi-search position-absolute top-50 translate-middle-y text-secondary opacity-75" style="left: 0.75rem; font-size: 0.75rem;"></i>
-                            </div>
-                        </div>
-
-                        <div v-if="filteredActiveFnbOrders.length > 0" class="d-flex flex-column gap-2" style="max-height: calc(100vh - 200px); overflow-y: auto; scrollbar-width: none;">
-                            <div v-for="order in filteredActiveFnbOrders" :key="order.id" 
-                                 @click="openFnbDetailModal(order)"
-                                 class="p-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s;"
-                                 onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                                 onmouseout="this.style.background='rgba(255,255,255,0.03)'">
-                                <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom" style="border-color: rgba(255,255,255,0.05) !important;">
-                                    <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 28px; height: 28px; background: rgba(245,158,11,0.12);">
-                                        <i class="bi bi-person-fill" style="font-size: 0.8rem; color: #f59e0b;"></i>
-                                    </div>
-                                    <div class="flex-grow-1 overflow-hidden">
-                                        <div class="fw-bold small text-truncate" style="font-size: 0.75rem;">{{ order.customer_name }}</div>
-                                        <div class="text-secondary" style="font-size: 0.65rem;">
-                                            <i class="bi bi-clock me-1"></i>{{ formatDate(order.start_time || order.created_at).split(' ')[1] }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center" style="font-size: 0.7rem;">
-                                    <span class="text-secondary">
-                                        <i class="bi bi-cup-hot me-1"></i>{{ order.items?.length || 0 }} item
-                                    </span>
-                                    <span class="fw-bold" style="color: #f59e0b;">{{ formatRupiah(order.fnb_cost || 0) }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div v-else class="text-center py-4 text-secondary opacity-50 small border rounded" style="border-color: rgba(255,255,255,0.05) !important;">
-                            <i class="bi bi-search d-block mb-1 fs-4"></i>
-                            Tidak ada pesanan
                         </div>
                     </div>
                 </div>
@@ -932,7 +762,7 @@ const printReceipt = (transaction) => {
         <!-- Order Modal (Start Session — unchanged)            -->
         <!-- ═══════════════════════════════════════════════════ -->
         <div v-if="showOrderModal" class="bb-modal-backdrop">
-            <div class="bb-modal" style="max-width: 1040px; width: 95%;">
+            <div class="bb-modal" style="max-width: 1240px; width: 95%;">
                 <div class="bb-modal-header">
                     <div>
                         <h5 class="fw-bold mb-0">Order Paket Meja</h5>
@@ -1004,13 +834,13 @@ const printReceipt = (transaction) => {
                                         <div v-if="form.errors.customer_name" class="small text-danger mt-1">{{ form.errors.customer_name }}</div>
                                     </div>
 
-                                    <div class="col-6">
-                                        <label class="bb-label">Durasi (Jam) <span class="text-danger">*</span></label>
+                                    <div class="col-4 col-sm-3">
+                                        <label class="bb-label">Jam <span class="text-danger">*</span></label>
                                         <input type="number" step="0.5" min="0.5" v-model="form.duration_hours" required class="bb-input" />
                                         <div v-if="form.errors.duration_hours" class="small text-danger mt-1">{{ form.errors.duration_hours }}</div>
                                     </div>
 
-                                    <div class="col-6">
+                                    <div class="col-8 col-sm-9">
                                         <label class="bb-label">Pilih Paket <span class="text-danger">*</span></label>
                                         <BbSelect 
                                             v-model="form.package_id" 
@@ -1333,211 +1163,6 @@ const printReceipt = (transaction) => {
                         </form>
                     </div>
 
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- F&B Standalone Order — Create Modal                -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <div v-if="showFnbOrderModal" class="bb-modal-backdrop" @click.self="closeFnbOrderModal">
-            <div class="bb-modal" style="max-width: 900px; width: 95%;">
-                <div class="bb-modal-header">
-                    <div>
-                        <h5 class="fw-bold mb-0"><i class="bi bi-cup-hot-fill me-2" style="color: #f59e0b;"></i>Pesan F&B</h5>
-                        <p class="small text-secondary mb-0 mt-1">Pesanan baru tanpa sesi meja</p>
-                    </div>
-                    <button type="button" @click="closeFnbOrderModal" class="bb-theme-toggle" style="width: 32px; height: 32px; font-size: 0.9rem;">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
-                <div class="bb-modal-body p-4">
-                    <form @submit.prevent="submitFnbOrder">
-                        <div class="row g-4">
-                            <!-- Left: F&B Menu -->
-                            <div class="col-md-7 border-end" style="border-color: rgba(255,255,255,0.1) !important;">
-                                <div class="mb-3 d-flex gap-2">
-                                    <div class="position-relative flex-grow-1">
-                                        <i class="bi bi-search position-absolute top-50 translate-middle-y ms-3 text-secondary"></i>
-                                        <input type="text" v-model="fnbSearch" class="bb-input ps-5" placeholder="Cari menu F&B..." />
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2 overflow-auto pb-2 mb-3" style="scrollbar-width: none;">
-                                    <button type="button" @click="fnbCategoryFilter = 'all'"
-                                            :class="['bb-btn bb-btn--sm flex-shrink-0', fnbCategoryFilter === 'all' ? 'bb-btn--warning' : 'bb-btn--ghost']">
-                                        Semua
-                                    </button>
-                                    <button type="button" v-for="cat in fnbCategories" :key="cat"
-                                            @click="fnbCategoryFilter = cat"
-                                            :class="['bb-btn bb-btn--sm flex-shrink-0', fnbCategoryFilter === cat ? 'bb-btn--warning' : 'bb-btn--ghost']">
-                                        {{ cat }}
-                                    </button>
-                                </div>
-                                <div v-if="filteredFnbItems.length > 0" class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); max-height: 400px; overflow-y: auto; padding-right: 5px;">
-                                    <div v-for="item in filteredFnbItems" :key="item.id" 
-                                         class="bb-table-card p-0 overflow-hidden d-flex flex-column" style="border-radius: 0.75rem; cursor: pointer;"
-                                         @click="addDraftToFnbOrder(item)">
-                                        <div v-if="item.image_url" style="height: 80px; overflow: hidden;">
-                                            <img :src="item.image_url" :alt="item.name" class="w-100 h-100" style="object-fit: cover;" />
-                                        </div>
-                                        <div v-else class="d-flex align-items-center justify-content-center" style="height: 80px; background: rgba(255,255,255,0.03);">
-                                            <i class="bi bi-cup-hot" style="font-size: 1.5rem; opacity: 0.15;"></i>
-                                        </div>
-                                        <div class="p-2 d-flex flex-column flex-grow-1">
-                                            <div class="fw-bold small text-truncate mb-1" style="font-size: 0.75rem;">{{ item.name }}</div>
-                                            <div class="d-flex justify-content-between align-items-center mt-auto pt-1">
-                                                <span class="fw-bold small" style="color: #f59e0b; font-size: 0.7rem;">{{ formatRupiah(item.price) }}</span>
-                                                <div class="bb-btn bb-btn--warning bb-btn--sm px-1 py-0" style="font-size: 0.6rem;">
-                                                    <i class="bi bi-plus-lg"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div v-else class="text-center py-5 text-secondary opacity-50">
-                                    <i class="bi bi-search fs-2 d-block mb-2"></i>
-                                    <div class="small">{{ fnbSearch ? 'Menu tidak ditemukan' : 'Belum ada menu F&B' }}</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Right: Cart & Form -->
-                            <div class="col-md-5">
-                                <div class="mb-4">
-                                    <label class="bb-label">Nama Pelanggan <span class="text-danger">*</span></label>
-                                    <input type="text" v-model="fnbOrderForm.customer_name" 
-                                           @input="fnbOrderForm.customer_name = fnbOrderForm.customer_name.replace(/\b\w/g, l => l.toUpperCase())" 
-                                           required class="bb-input" placeholder="Masukkan nama pelanggan..." />
-                                    <div v-if="fnbOrderForm.errors.customer_name" class="small text-danger mt-1">{{ fnbOrderForm.errors.customer_name }}</div>
-                                </div>
-                                
-                                <h6 class="fw-bold mb-3 d-flex justify-content-between align-items-center">
-                                    Pesanan F&B
-                                    <span v-if="fnbOrderForm.items.length > 0" class="badge rounded-pill px-2 py-1" style="background: rgba(245,158,11,0.15); color: #f59e0b; font-size: 0.7rem;">{{ fnbOrderForm.items.length }}</span>
-                                </h6>
-                                
-                                <div v-if="fnbOrderForm.items.length > 0" class="d-flex flex-column gap-2 mb-3" style="max-height: 230px; overflow-y: auto;">
-                                    <div v-for="(item, index) in fnbOrderForm.items" :key="item.fnb_item_id" class="p-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span class="fw-bold small">{{ item.name }}</span>
-                                            <button type="button" @click="removeDraftFnbOrder(index)" class="btn btn-sm text-danger p-0" title="Hapus">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span class="text-secondary small">{{ formatRupiah(item.price) }}</span>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <button type="button" @click="item.quantity > 1 ? item.quantity-- : null" class="bb-btn bb-btn--ghost px-2 py-0 text-secondary" style="font-size: 0.75rem;">
-                                                    <i class="bi bi-dash-lg"></i>
-                                                </button>
-                                                <input type="number" v-model.number="item.quantity" min="1" class="bb-input py-0 px-1 text-center" style="width: 50px; height: 26px; font-size: 0.75rem; border: none; background: rgba(255,255,255,0.05);" />
-                                                <button type="button" @click="item.quantity++" class="bb-btn bb-btn--ghost px-2 py-0 text-warning" style="font-size: 0.75rem;">
-                                                    <i class="bi bi-plus-lg"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div v-else class="text-center py-4 text-secondary opacity-50 small mb-3 border rounded" style="border-color: rgba(255,255,255,0.1) !important;">
-                                    <i class="bi bi-cart fs-3 d-block mb-1"></i>
-                                    Pilih menu F&B di samping
-                                </div>
-                                
-                                <div class="d-flex justify-content-between align-items-center p-3 rounded mb-4" style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2);">
-                                    <span class="fw-bold" style="color: #f59e0b;">Total</span>
-                                    <span class="fw-bold fs-5" style="color: #f59e0b;">{{ formatRupiah(fnbOrderDraftTotal) }}</span>
-                                </div>
-                                
-                                <div class="d-flex gap-2">
-                                    <button type="button" @click="closeFnbOrderModal" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
-                                        Batal
-                                    </button>
-                                    <button type="submit" :disabled="fnbOrderForm.processing || fnbOrderForm.items.length === 0 || !fnbOrderForm.customer_name" class="bb-btn bb-btn--warning flex-grow-1 py-3">
-                                        <i class="bi bi-check2-circle me-1"></i> Simpan Pesanan
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════ -->
-        <!-- F&B Order Detail Modal (Standalone)                -->
-        <!-- ═══════════════════════════════════════════════════ -->
-        <div v-if="showFnbDetailModal && selectedFnbOrder" class="bb-modal-backdrop" @click.self="closeFnbDetailModal">
-            <div class="bb-modal" style="max-width: 900px; width: 95%;">
-                <!-- Header -->
-                <div class="bb-modal-header align-items-start">
-                    <div>
-                        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-cup-hot-fill" style="color: #f59e0b;"></i>
-                            Pesanan F&B — {{ selectedFnbOrder.customer_name }}
-                        </h5>
-                        <div class="d-flex gap-3 mt-1 small text-secondary">
-                            <span><i class="bi bi-clock me-1"></i>{{ formatDate(selectedFnbOrder.start_time || selectedFnbOrder.created_at) }}</span>
-                            <span class="fw-bold" style="color: #f59e0b;">{{ formatRupiah(selectedFnbOrder.fnb_cost || 0) }}</span>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" @click="printFnbReceipt(selectedFnbOrder)" class="bb-btn bb-btn--sm bb-btn--ghost text-warning" style="border: 1px solid rgba(245,158,11,0.3);">
-                            <i class="bi bi-printer me-1"></i> Cetak Struk
-                        </button>
-                        <button @click="closeFnbDetailModal" class="bb-theme-toggle" style="width: 32px; height: 32px; font-size: 0.9rem;">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bb-modal-body p-4" style="min-height: 350px; max-height: 60vh; overflow-y: auto;">
-                    <div v-if="selectedFnbOrder?.items?.length > 0">
-                        <div class="d-flex flex-column gap-2 mb-4">
-                            <div v-for="item in selectedFnbOrder.items" :key="item.id" class="bb-history-item p-3 rounded-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="flex-shrink-0 rounded overflow-hidden" style="width: 44px; height: 44px;">
-                                        <img v-if="item.fnb_item?.image_url" :src="item.fnb_item.image_url" class="w-100 h-100" style="object-fit: cover;" />
-                                        <div v-else class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.05);">
-                                            <i class="bi bi-cup-hot" style="opacity: 0.3;"></i>
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-bold small">{{ item.fnb_item?.name || 'Item' }}</div>
-                                        <div class="text-secondary" style="font-size: 0.72rem;">
-                                            {{ formatRupiah(item.price) }} × {{ item.quantity }}
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="fw-bold" style="min-width: 70px; text-align: right; color: #f59e0b;">
-                                            {{ formatRupiah(item.subtotal) }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="p-4 rounded-4 mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold fs-5">TOTAL</span>
-                                <span class="fw-bold fs-4" style="color: #f59e0b;">{{ formatRupiah(selectedFnbOrder.fnb_cost || 0) }}</span>
-                            </div>
-                        </div>
-
-                        <div class="d-flex gap-2">
-                            <button type="button" @click="closeFnbDetailModal" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
-                                Tutup
-                            </button>
-                            <button type="button" @click="checkoutFnbOrder" class="bb-btn bb-btn--danger flex-grow-1 py-3">
-                                <i class="bi bi-check2-circle me-1"></i> Checkout Pesanan
-                            </button>
-                        </div>
-                    </div>
-                    <div v-else class="text-center py-5 text-secondary opacity-50">
-                        <i class="bi bi-receipt fs-2 d-block mb-2"></i>
-                        <div class="small">Belum ada pesanan F&B</div>
-                        <button type="button" @click="closeFnbDetailModal" class="bb-btn bb-btn--ghost mt-3">
-                            Tutup
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>

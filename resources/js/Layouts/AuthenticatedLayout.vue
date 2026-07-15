@@ -4,17 +4,15 @@ import { Link, usePage } from '@inertiajs/vue3';
 
 const isDark = ref(true);
 const currentTime = ref('');
-// Buka sidebar secara default kecuali jika di halaman dashboard
-const isSidebarOpen = ref(!route().current('dashboard'));
+// Buka sidebar secara default kecuali jika di halaman dashboard atau F&B
+const isSidebarOpen = ref(!route().current('dashboard') && !route().current('fnb-orders.index'));
 
 const toggleSidebar = () => {
     isSidebarOpen.value = !isSidebarOpen.value;
 };
 
 const closeSidebarMobile = () => {
-    if (window.innerWidth < 992) {
-        isSidebarOpen.value = false;
-    }
+    isSidebarOpen.value = false;
 };
 
 const toggleTheme = () => {
@@ -46,8 +44,8 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
 <template>
     <div class="d-flex" style="height: 100vh; overflow: hidden; position: relative;">
         
-        <!-- Mobile Sidebar Backdrop (Only visible on small screens when open) -->
-        <div v-if="isSidebarOpen" class="bb-sidebar-backdrop d-lg-none" @click="closeSidebarMobile"></div>
+        <!-- Mobile Sidebar Backdrop -->
+        <div v-if="isSidebarOpen" class="bb-sidebar-backdrop" @click="closeSidebarMobile"></div>
 
         <!-- Sidebar -->
         <aside class="bb-sidebar" :class="{ 'bb-sidebar--open': isSidebarOpen }">
@@ -70,6 +68,10 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
                 <Link :href="route('dashboard')" class="bb-nav-link" :class="{ active: route().current('dashboard') }" @click="closeSidebarMobile">
                     <i class="bi bi-grid-1x2-fill"></i>
                     Live Monitoring
+                </Link>
+                <Link :href="route('fnb-orders.index')" class="bb-nav-link" :class="{ active: route().current('fnb-orders.index') }" @click="closeSidebarMobile">
+                    <i class="bi bi-cup-hot-fill" style="color: #f59e0b;"></i>
+                    Pemesanan F&B
                 </Link>
                 
                 <template v-if="$page.props.auth.user.role === 'admin'">

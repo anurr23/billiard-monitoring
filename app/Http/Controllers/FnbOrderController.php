@@ -7,8 +7,26 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
+use Inertia\Inertia;
+use App\Models\FnbItem;
+
 class FnbOrderController extends Controller
 {
+    public function index()
+    {
+        $fnbItems = FnbItem::orderBy('category')->orderBy('name')->get();
+        $fnbOrders = Transaction::fnbOnly()
+            ->where('status', 'active')
+            ->with('items.fnbItem')
+            ->latest()
+            ->get();
+
+        return Inertia::render('Fnb/Index', [
+            'fnbItems' => $fnbItems,
+            'fnbOrders' => $fnbOrders,
+        ]);
+    }
+
     /**
      * Create a standalone F&B order (no table session).
      */

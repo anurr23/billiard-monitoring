@@ -21,17 +21,11 @@ class TableController extends Controller
         ])->get()->sortBy('name', SORT_NATURAL)->values();
         $packages = \App\Models\Package::all();
         $fnbItems = FnbItem::orderBy('category')->orderBy('name')->get();
-        $fnbOrders = Transaction::fnbOnly()
-            ->where('status', 'active')
-            ->with('items.fnbItem')
-            ->latest()
-            ->get();
 
         return Inertia::render('Dashboard', [
             'tables' => $tables,
             'packages' => $packages,
             'fnbItems' => $fnbItems,
-            'fnbOrders' => $fnbOrders,
         ]);
     }
 
