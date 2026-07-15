@@ -4,8 +4,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 
 const isDark = ref(true);
 const currentTime = ref('');
-// Buka sidebar secara default kecuali jika di halaman dashboard atau F&B
-const isSidebarOpen = ref(!route().current('dashboard') && !route().current('fnb-orders.index'));
+const isSidebarOpen = ref(window.innerWidth >= 1200 && !route().current('dashboard') && !route().current('fnb-orders.index'));
 
 const toggleSidebar = () => {
     isSidebarOpen.value = !isSidebarOpen.value;
@@ -75,6 +74,23 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
                 </Link>
                 
                 <template v-if="$page.props.auth.user.role === 'admin'">
+                    <div class="bb-nav-label">Laporan</div>
+
+                    <Link :href="route('reports.fnb-sales')" class="bb-nav-link" :class="{ active: route().current('reports.fnb-sales') }" @click="closeSidebarMobile">
+                        <i class="bi bi-receipt-cutoff" style="color: #f59e0b;"></i>
+                        Penjualan F&B
+                    </Link>
+
+                    <Link :href="route('reports.table-transactions')" class="bb-nav-link" :class="{ active: route().current('reports.table-transactions') }" @click="closeSidebarMobile">
+                        <i class="bi bi-journal-text" style="color: #10b981;"></i>
+                        Transaksi Meja
+                    </Link>
+
+                    <Link :href="route('reports.revenue')" class="bb-nav-link" :class="{ active: route().current('reports.revenue') }" @click="closeSidebarMobile">
+                        <i class="bi bi-wallet2" style="color: #6366f1;"></i>
+                        Total Pendapatan
+                    </Link>
+
                     <div class="bb-nav-label">Master Data</div>
 
                     <Link :href="route('tables.index')" class="bb-nav-link" :class="{ active: route().current('tables.index') }" @click="closeSidebarMobile">
@@ -91,7 +107,7 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
                         <i class="bi bi-cup-straw" style="color: #f97316;"></i>
                         Kelola Makanan
                     </Link>
-                    
+
                     <Link :href="route('users.index')" class="bb-nav-link" :class="{ active: route().current('users.index') }" @click="closeSidebarMobile">
                         <i class="bi bi-people-fill" style="color: #8b5cf6;"></i>
                         Kelola User
@@ -147,6 +163,28 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
                     <button @click="toggleTheme" class="bb-theme-toggle">
                         <i :class="isDark ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill'"></i>
                     </button>
+                    <div class="dropdown">
+                        <button class="bb-header-profile dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="--bs-dropdown-toggle-icon-transform: none;">
+                            <div v-if="$page.props.auth.user.photo_url" class="bb-header-avatar overflow-hidden">
+                                <img :src="$page.props.auth.user.photo_url" class="w-100 h-100 object-fit-cover" alt="User Photo">
+                            </div>
+                            <div v-else class="bb-header-avatar">{{ userInitial }}</div>
+                            <span class="bb-header-profile-name d-none d-md-inline">{{ userName }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-2" style="border-radius: 0.75rem; min-width: 200px;">
+                            <li>
+                                <Link class="dropdown-item rounded-2 py-2 px-3" :href="route('profile.edit')">
+                                    <i class="bi bi-person-circle me-2"></i> Profil
+                                </Link>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <Link class="dropdown-item rounded-2 py-2 px-3 text-danger" :href="route('logout')" method="post" as="button">
+                                    <i class="bi bi-box-arrow-left me-2"></i> Log Out
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </header>
 

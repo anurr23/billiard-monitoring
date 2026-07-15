@@ -95,6 +95,15 @@ body {
     backdrop-filter: blur(4px);
 }
 
+@media (min-width: 1200px) {
+    .bb-sidebar {
+        transform: translateX(0) !important;
+    }
+    .bb-sidebar-backdrop {
+        display: none !important;
+    }
+}
+
 [data-bs-theme="dark"] .bb-sidebar {
     background: #111827;
     border-right: 1px solid rgba(255,255,255,0.06);
@@ -317,6 +326,51 @@ body {
 }
 [data-bs-theme="dark"] .bb-theme-toggle:hover {
     background: rgba(255,255,255,0.08);
+}
+
+.bb-header-profile {
+    height: 40px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    padding: 4px 12px 4px 4px;
+    color: inherit;
+}
+.bb-header-profile:hover {
+    background: rgba(0,0,0,0.06);
+}
+[data-bs-theme="dark"] .bb-header-profile {
+    background: transparent;
+}
+[data-bs-theme="dark"] .bb-header-profile:hover {
+    background: rgba(255,255,255,0.08);
+}
+.bb-header-profile-name {
+    font-weight: 500;
+    font-size: 0.85rem;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bb-header-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--bb-accent), #6366f1);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 // ============================================================
@@ -777,6 +831,12 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: 1.5rem 2rem;
+}
+
+@media (min-width: 1200px) {
+    .bb-main {
+        margin-left: var(--bb-sidebar-width);
+    }
 }
 
 .bb-badge {
