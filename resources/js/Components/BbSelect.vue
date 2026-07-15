@@ -66,7 +66,7 @@ onUnmounted(() => {
             @keydown.esc.prevent="isOpen = false"
         >
             <span class="selected-text" :style="{ opacity: !modelValue ? 0.6 : 1 }">
-                {{ options.find(opt => opt.value === modelValue)?.label || placeholder }}
+                {{ (options || []).find(opt => opt.value === modelValue)?.label || placeholder }}
             </span>
             <i class="bi bi-chevron-down transition-transform" :style="{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' }"></i>
         </div>
@@ -81,7 +81,7 @@ onUnmounted(() => {
                     {{ placeholder }}
                 </div>
                 <div 
-                    v-for="option in options" 
+                    v-for="option in (options || [])" 
                     :key="option.value" 
                     class="bb-select-option"
                     :class="{ 'active': modelValue === option.value }"

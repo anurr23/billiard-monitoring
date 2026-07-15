@@ -25,6 +25,7 @@ class UserController extends Controller
             'username' => 'required|string|max:255|unique:users',
             'role' => ['required', Rule::in(['admin', 'kasir'])],
             'password' => 'required|string|min:4',
+            'is_active' => 'sometimes|boolean',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048'
         ]);
 
@@ -36,6 +37,11 @@ class UserController extends Controller
         unset($validated['photo']);
 
         $validated['password'] = Hash::make($validated['password']);
+
+        if (! isset($validated['is_active'])) {
+            $validated['is_active'] = true;
+        }
+
         User::create($validated);
 
         return back()->with('success', 'User berhasil ditambahkan.');
@@ -47,6 +53,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'username' => ['required', 'string', 'max:255', Rule::unique('users')->ignore($user->id)],
             'role' => ['required', Rule::in(['admin', 'kasir'])],
+            'is_active' => 'sometimes|boolean',
             'password' => 'nullable|string|min:4',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048'
         ]);
@@ -65,6 +72,10 @@ class UserController extends Controller
             unset($validated['password']);
         } else {
             $validated['password'] = Hash::make($validated['password']);
+        }
+
+        if (isset($validated['is_active']) && ! $validated['is_active'] && $user->id === auth()->id()) {
+            return back()->withErrors(['message' => 'Tidak bisa menonaktifkan akun sendiri.']);
         }
 
         $user->update($validated);

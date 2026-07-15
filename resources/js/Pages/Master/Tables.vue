@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, toRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { useDatatable } from '@/Composables/useDatatable';
@@ -8,6 +8,8 @@ const props = defineProps({
     tables: Array,
 });
 
+const tablesRef = toRef(props, 'tables');
+
 const {
     searchQuery,
     currentPage,
@@ -15,7 +17,7 @@ const {
     paginatedData,
     nextPage,
     prevPage,
-} = useDatatable(props.tables, ['name', 'relay_channel']);
+} = useDatatable(tablesRef, ['name', 'relay_channel']);
 
 const isEditing = ref(false);
 const editId = ref(null);

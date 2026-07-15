@@ -4,6 +4,14 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
     base: '/poolstream/public/build/',
+    css: {
+        preprocessorOptions: {
+            scss: {
+                quietDeps: true,
+                silenceDeprecations: ['color-functions', 'global-builtin', 'import', 'mixed-decls'],
+            },
+        },
+    },
     plugins: [
         laravel({
             input: [

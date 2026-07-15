@@ -51,6 +51,17 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        $user = Auth::user();
+        if (! $user->is_active) {
+            Auth::logout();
+            session()->invalidate();
+            session()->regenerateToken();
+
+            throw ValidationException::withMessages([
+                'username' => 'Akun Anda telah dinonaktifkan. Hubungi admin.',
+            ]);
+        }
     }
 
     /**

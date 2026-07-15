@@ -8,6 +8,8 @@ use Inertia\Inertia;
 use App\Http\Controllers\TableController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TransactionItemController;
+use App\Http\Controllers\FnbOrderController;
 
 Route::get('/', function () {
     return redirect('/dashboard');
@@ -17,6 +19,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [TableController::class, 'index'])->name('dashboard');
     Route::post('/tables/{id}/start', [TableController::class, 'start'])->name('tables.start');
     Route::post('/tables/{id}/stop', [TableController::class, 'stop'])->name('tables.stop');
+    Route::put('/tables/{id}/transactions/{transaction}', [TableController::class, 'updateSession'])->name('tables.updateSession');
+
+    // F&B items on active transactions
+    Route::post('/transactions/{transaction}/items', [TransactionItemController::class, 'store'])->name('transaction-items.store');
+    Route::patch('/transaction-items/{item}/add', [TransactionItemController::class, 'updateQuantity'])->name('transaction-items.add');
+
+    // F&B standalone orders
+    Route::post('/fnb-orders', [FnbOrderController::class, 'store'])->name('fnb-orders.store');
+    Route::post('/fnb-orders/{transaction}/checkout', [FnbOrderController::class, 'checkout'])->name('fnb-orders.checkout');
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/master/tables', [TableController::class, 'masterIndex'])->name('tables.index');
@@ -44,7 +55,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 require __DIR__.'/auth.php';

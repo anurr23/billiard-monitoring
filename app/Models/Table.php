@@ -22,4 +22,16 @@ class Table extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function recentTransactions()
+    {
+        return $this->hasMany(Transaction::class)
+            ->where(function($q) {
+                $q->where('status', 'active')
+                  ->orWhere('created_at', '>=', \Carbon\Carbon::now()->subHours(48))
+                  ->orWhere('end_time', '>=', \Carbon\Carbon::now()->subHours(48));
+            })
+            ->with(['package', 'items.fnbItem'])
+            ->latest();
+    }
 }

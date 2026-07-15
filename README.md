@@ -1,58 +1,77 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <br>
+  <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="200" alt="Laravel Logo">
+  <br>
+  <h1 align="center">🎱 PoolStream</h1>
+  <p align="center">
+    <strong>Billiard & Lounge Management System</strong>
+  </p>
 </p>
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📖 About PoolStream
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**PoolStream** is a modern, comprehensive management application tailored specifically for billiard halls and lounges. Built on top of the robust Laravel 13 framework and powered by an interactive Vue 3 (Inertia.js) frontend, it provides an all-in-one solution for handling billiard table sessions, Food & Beverage (F&B) transactions, and automated hardware control (lighting relays).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+The system prioritizes speed, ease of use, and a beautiful UI, allowing cashiers (*Kasir*) to effortlessly manage incoming customers, while offering administrators complete control over inventory, pricing, and system users.
 
-## Learning Laravel
+## ✨ Key Features
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- 🕒 **Table Session Management**: Start, monitor, and edit active billiard sessions seamlessly. Time tracking is precise and automated.
+- 🍔 **Integrated F&B Ordering**: Customers can order food and drinks directly to their active billiard tables or independently. Total costs are automatically aggregated upon checkout.
+- 💡 **Automated Hardware Control**: Integrates directly with USB HID relays (via Python script) to automatically turn on table lights when a session starts and turn them off when it ends.
+- 💳 **Smart Checkout & Receipt Printing**: Generates detailed, neatly formatted receipts summarizing both billiard playtime and F&B consumption.
+- 🌓 **Dynamic Theming**: Features a gorgeous, responsive UI supporting both Light and Dark modes.
+- 🛡️ **Role-Based Access**: Secure role separation between `admin` (full access) and `kasir` (dashboard operations only).
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🛠️ Technology Stack
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+- **Backend**: Laravel 13 (PHP)
+- **Frontend**: Vue 3 (Composition API) + Inertia.js
+- **Styling**: Bootstrap 5 (Custom SCSS Theming)
+- **Database**: SQLite (Zero-configuration database)
+- **Hardware Integration**: Python (PyUSB for relay control)
 
-## Agentic Development
+## 🚀 Installation & Setup
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+PoolStream is designed to be extremely easy to set up.
 
-```bash
-composer require laravel/boost --dev
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/anurr23/billiard-monitoring.git
+   cd billiard-monitoring
+   ```
 
-php artisan boost:install
-```
+2. **Run the initial setup:**
+   PoolStream includes a custom composer script that handles full initialization (copying `.env`, generating keys, migrating the database, and building NPM assets).
+   ```bash
+   composer setup
+   ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+3. **Start the Development Server:**
+   This command concurrently runs the PHP development server, queue worker, and Vite asset bundler.
+   ```bash
+   composer dev
+   ```
 
-## Contributing
+4. **Login:**
+   Access the app at `http://localhost:8000`. Login using your configured username and password (note: authentication uses the `username` field).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 📂 Project Structure
 
-## Code of Conduct
+- `app/Http/Controllers/`: Contains the core logic for transactions, table management, and user roles.
+- `app/Models/`: Eloquent models (Uses UUIDs for primary entities like `User` and `Table`).
+- `app/Services/relay_controller.py`: The Python hardware bridge for controlling table lighting.
+- `database/database.sqlite`: The primary data store.
+- `resources/js/Pages/`: Vue 3 frontend components, routed via Inertia.
+- `resources/scss/app.scss`: Centralized styling and theme tokens (Bootstrap 5 customizations).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 🔒 Roles & Permissions
 
-## Security Vulnerabilities
+- **Admin**: Has access to `/master/*` routes to manage users, add/remove tables, update F&B inventory, and configure pricing packages.
+- **Kasir (Cashier)**: Restricted to the main dashboard to handle daily operations, table checkout, and F&B orders. Users cannot delete their own accounts.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 📄 License
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

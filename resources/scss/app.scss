@@ -426,6 +426,16 @@ body {
     box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
     color: #fff;
 }
+.bb-btn--warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+}
+.bb-btn--warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+    color: #fff;
+}
 .bb-btn--primary {
     background: linear-gradient(135deg, #6366f1, #4f46e5);
     color: #fff;
@@ -596,6 +606,43 @@ body {
 }
 .bb-modal-body {
     padding: 1rem 1.75rem 1.75rem;
+}
+
+.bb-history-item {
+    background: #f8fafc;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    color: #1e293b;
+    transition: all 0.2s ease;
+
+    .bb-history-title {
+        color: #1e293b;
+        font-weight: 700;
+    }
+    .bb-history-meta {
+        color: #64748b;
+    }
+    .bb-history-value {
+        color: #334155;
+        font-weight: 600;
+    }
+}
+
+[data-bs-theme="dark"] .bb-history-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #f1f5f9;
+
+    .bb-history-title {
+        color: #f8fafc;
+    }
+    .bb-history-meta {
+        color: #94a3b8;
+    }
+    .bb-history-value {
+        color: #e2e8f0;
+    }
 }
 
 @keyframes fadeIn {
