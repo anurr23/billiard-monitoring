@@ -870,8 +870,91 @@ body {
 [data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
     background: rgba(255,255,255,0.1);
 }
-  
-/* Mobile Responsive */ 
+
+// ============================================================
+// 14. VUE DATEPICKER OVERRIDES
+// ============================================================
+
+.dp__input {
+    border-radius: 0.75rem !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    background: rgba(0,0,0,0.02) !important;
+    padding: 0.85rem 1rem 0.85rem 2.6rem !important;
+    font-size: 0.9rem !important;
+    min-height: 48px !important;
+    color: var(--bs-body-color) !important;
+    transition: all 0.2s ease !important;
+}
+.dp__input:focus {
+    border-color: var(--bb-accent) !important;
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.1) !important;
+}
+.dp__input_placeholder {
+    color: #94a3b8 !important;
+}
+.dp__input_icon {
+    color: var(--bb-accent) !important;
+}
+.dp__clear_icon {
+    color: #94a3b8 !important;
+}
+.dp__menu {
+    border-radius: 0.75rem !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+    overflow: hidden;
+}
+.dp__today {
+    border-color: var(--bb-accent) !important;
+}
+.dp__active_date {
+    background: var(--bb-accent) !important;
+    border-color: var(--bb-accent) !important;
+}
+.dp__range_between {
+    background: rgba(16,185,129,0.08) !important;
+}
+.dp__cell_highlight {
+    background: rgba(16,185,129,0.08) !important;
+}
+.dp__action_button {
+    background: var(--bb-accent) !important;
+    border-color: var(--bb-accent) !important;
+}
+.dp__action_button:hover {
+    background: #0d9668 !important;
+}
+.dp__month_year_select {
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+.dp__arrow_top,
+.dp__arrow_bottom {
+    display: none !important;
+}
+[data-bs-theme="dark"] .dp__input {
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    background: rgba(255,255,255,0.03) !important;
+}
+[data-bs-theme="dark"] .dp__input:focus {
+    border-color: var(--bb-accent) !important;
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.15) !important;
+}
+[data-bs-theme="dark"] .dp__menu {
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    background: #1e293b !important;
+}
+[data-bs-theme="dark"] .dp__cell:not(.dp__cell_disabled):not(.dp__cell_hidden):not(.dp__active_date):not(.dp__range_between):not(.dp__range_start):not(.dp__range_end):hover {
+    background: rgba(255,255,255,0.06) !important;
+}
+[data-bs-theme="dark"] .dp__calendar_header_item {
+    color: #94a3b8 !important;
+}
+[data-bs-theme="dark"] .dp__cell_text {
+    color: #e2e8f0 !important;
+}
+
+/* Mobile Responsive */
 @media (max-width: 991.98px) {  
     .bb-header { padding: 1rem 1.25rem; }  
     .bb-page-content { padding: 1.25rem; }  

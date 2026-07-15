@@ -4,7 +4,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 
 const isDark = ref(true);
 const currentTime = ref('');
-const isSidebarOpen = ref(window.innerWidth >= 1200 && !route().current('dashboard') && !route().current('fnb-orders.index'));
+const isSidebarOpen = ref(false);
 
 const toggleSidebar = () => {
     isSidebarOpen.value = !isSidebarOpen.value;
@@ -89,6 +89,11 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
                     <Link :href="route('reports.revenue')" class="bb-nav-link" :class="{ active: route().current('reports.revenue') }" @click="closeSidebarMobile">
                         <i class="bi bi-wallet2" style="color: #6366f1;"></i>
                         Total Pendapatan
+                    </Link>
+
+                    <Link :href="route('reports.analytics')" class="bb-nav-link" :class="{ active: route().current('reports.analytics') }" @click="closeSidebarMobile">
+                        <i class="bi bi-graph-up-arrow" style="color: #8b5cf6;"></i>
+                        Analityc
                     </Link>
 
                     <div class="bb-nav-label">Master Data</div>

@@ -57,6 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/master/reports/fnb-sales', [ReportController::class, 'fnbSales'])->name('reports.fnb-sales');
         Route::get('/master/reports/table-transactions', [ReportController::class, 'tableTransactions'])->name('reports.table-transactions');
         Route::get('/master/reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
+        Route::get('/master/reports/analytics', [ReportController::class, 'analytics'])->name('reports.analytics');
     });
 });
 

@@ -2,6 +2,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { VueDatePicker } from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 
 const props = defineProps({
     sales: Array,
@@ -10,15 +12,23 @@ const props = defineProps({
     endDate: String,
 });
 
-const startDate = ref(props.startDate);
-const endDate = ref(props.endDate);
-const activePreset = ref(null);
-const startInput = ref(null);
-const endInput = ref(null);
-
-const openDatePicker = (inputEl) => {
-    if (inputEl) inputEl.showPicker();
+const toDatePickerDate = (str) => {
+    if (!str) return null;
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
 };
+
+const toDateString = (date) => {
+    if (!date) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
+const startDate = ref(toDatePickerDate(props.startDate));
+const endDate = ref(toDatePickerDate(props.endDate));
+const activePreset = ref(null);
 
 const presets = [
     { label: 'Hari Ini', days: 0 },
@@ -30,8 +40,8 @@ const presets = [
 const applyFilter = () => {
     activePreset.value = null;
     router.get(route('reports.fnb-sales'), {
-        start_date: startDate.value,
-        end_date: endDate.value,
+        start_date: toDateString(startDate.value),
+        end_date: toDateString(endDate.value),
     }, { preserveState: true });
 };
 
@@ -49,8 +59,8 @@ const setPreset = (preset) => {
         start.setDate(start.getDate() - preset.days);
     }
 
-    startDate.value = start.toISOString().split('T')[0];
-    endDate.value = end.toISOString().split('T')[0];
+    startDate.value = start;
+    endDate.value = end;
     applyFilter();
 };
 
@@ -62,12 +72,9 @@ const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-const displayStart = computed(() => {
-    return startDate.value ? formatDate(startDate.value) : '';
-});
-
-const displayEnd = computed(() => {
-    return endDate.value ? formatDate(endDate.value) : '';
+const displayRange = computed(() => {
+    if (!startDate.value || !endDate.value) return '';
+    return `${formatDate(toDateString(startDate.value))} — ${formatDate(toDateString(endDate.value))}`;
 });
 </script>
 
@@ -83,7 +90,7 @@ const displayEnd = computed(() => {
         <div class="bb-card mb-4">
             <div class="bb-card-header d-flex justify-content-between align-items-center">
                 <h6 class="fw-bold mb-0"><i class="bi bi-calendar-range me-2"></i>Filter Periode</h6>
-                <span class="small text-secondary">{{ displayStart }} — {{ displayEnd }}</span>
+                <span class="small text-secondary">{{ displayRange }}</span>
             </div>
             <div class="bb-card-body">
                 <div class="d-flex flex-wrap gap-2 mb-3">
@@ -103,21 +110,29 @@ const displayEnd = computed(() => {
                         <label class="bb-label">
                             <i class="bi bi-calendar3 me-1"></i> Dari Tanggal
                         </label>
-                        <div class="bb-date-input-wrap" @click="openDatePicker(startInput)">
-                            <input type="date" v-model="startDate" ref="startInput" class="bb-date-input" />
-                            <span class="bb-date-fake">{{ displayStart || 'Pilih tanggal' }}</span>
-                            <i class="bi bi-calendar3 bb-date-icon"></i>
-                        </div>
+                        <VueDatePicker
+                            v-model="startDate"
+                            format="dd MMM yyyy"
+                            :enable-time-picker="false"
+                            auto-apply
+                            position="left"
+                            :teleport="true"
+                            placeholder="Pilih tanggal"
+                        />
                     </div>
                     <div class="col-md-4">
                         <label class="bb-label">
                             <i class="bi bi-calendar3 me-1"></i> Sampai Tanggal
                         </label>
-                        <div class="bb-date-input-wrap" @click="openDatePicker(endInput)">
-                            <input type="date" v-model="endDate" ref="endInput" class="bb-date-input" />
-                            <span class="bb-date-fake">{{ displayEnd || 'Pilih tanggal' }}</span>
-                            <i class="bi bi-calendar3 bb-date-icon"></i>
-                        </div>
+                        <VueDatePicker
+                            v-model="endDate"
+                            format="dd MMM yyyy"
+                            :enable-time-picker="false"
+                            auto-apply
+                            position="left"
+                            :teleport="true"
+                            placeholder="Pilih tanggal"
+                        />
                     </div>
                     <div class="col-md-4 d-flex gap-2">
                         <button @click="applyFilter" class="bb-btn bb-btn--primary flex-grow-1 py-3">
@@ -214,60 +229,3 @@ const displayEnd = computed(() => {
 
     </AuthenticatedLayout>
 </template>
-
-<style scoped>
-.bb-date-input-wrap {
-    position: relative;
-    width: 100%;
-}
-
-.bb-date-input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 1;
-}
-
-.bb-date-fake {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 0.85rem 1rem 0.85rem 2.6rem;
-    border-radius: 0.75rem;
-    border: 1px solid rgba(0,0,0,0.08);
-    background: rgba(0,0,0,0.02);
-    color: var(--bs-body-color);
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    box-sizing: border-box;
-    min-height: 48px;
-}
-
-.bb-date-input-wrap:hover .bb-date-fake {
-    border-color: var(--bb-accent);
-    background: rgba(16,185,129,0.04);
-}
-
-.bb-date-icon {
-    position: absolute;
-    left: 0.85rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--bb-accent);
-    font-size: 1rem;
-    z-index: 1;
-    pointer-events: none;
-}
-
-[data-bs-theme="dark"] .bb-date-fake {
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.03);
-}
-
-[data-bs-theme="dark"] .bb-date-input-wrap:hover .bb-date-fake {
-    background: rgba(16,185,129,0.08);
-}
-</style>
