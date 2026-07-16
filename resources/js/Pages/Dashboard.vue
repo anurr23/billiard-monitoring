@@ -219,6 +219,19 @@ const activeTransaction = computed(() => {
     return selectedActiveTable.value.transactions?.[0] || null;
 });
 
+const minimumEditDuration = computed(() => {
+    const tx = activeTransaction.value;
+    if (!tx || !tx.start_time) return 0.5;
+    
+    const start = new Date(tx.start_time);
+    const now = new Date();
+    const diffHours = (now - start) / (1000 * 60 * 60);
+    
+    // Calculate nearest 0.5 hours above the elapsed time
+    const minHours = Math.ceil(diffHours * 2) / 2;
+    return Math.max(0.5, minHours);
+});
+
 const openSessionModal = (table) => {
     selectedActiveTable.value = table;
     sessionTab.value = 'edit';
@@ -233,7 +246,9 @@ const openSessionModal = (table) => {
         const start = new Date(tx.start_time);
         const end = new Date(tx.expected_end_time);
         const diffHours = (end - start) / (1000 * 60 * 60);
-        editSessionForm.duration_hours = Math.max(0.5, Math.round(diffHours * 2) / 2); // default or nearest 0.5
+        
+        // Ensure initial edit value isn't lower than what has already elapsed
+        editSessionForm.duration_hours = Math.max(minimumEditDuration.value, Math.round(diffHours * 2) / 2);
         
         // Populate items
         editSessionForm.items = tx.items.map(i => ({
@@ -1107,7 +1122,8 @@ const printReceipt = (transaction) => {
                                         <!-- Durasi -->
                                         <div class="col-4 col-sm-3">
                                             <label class="bb-label">Jam</label>
-                                            <input type="number" step="0.5" min="0.5" v-model="editSessionForm.duration_hours" required class="bb-input" />
+                                            <input type="number" step="0.5" :min="minimumEditDuration" v-model="editSessionForm.duration_hours" required class="bb-input" />
+                                            <div v-if="editSessionForm.errors.duration_hours" class="small text-danger mt-1">{{ editSessionForm.errors.duration_hours }}</div>
                                         </div>
 
                                         <!-- Paket -->

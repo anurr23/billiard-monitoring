@@ -146,6 +146,16 @@ class TableController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
+        // VALIDATION: Ensure new duration is not less than the elapsed time
+        $elapsedMinutes = Carbon::now()->diffInMinutes(Carbon::parse($transaction->start_time));
+        $elapsedHours = $elapsedMinutes / 60;
+        
+        if ($request->duration_hours < $elapsedHours) {
+            return back()->withErrors([
+                'duration_hours' => 'Durasi pesanan tidak boleh kurang dari waktu yang sudah berjalan (' . number_format($elapsedHours, 1) . ' jam).'
+            ]);
+        }
+
         $package = \App\Models\Package::find($request->package_id);
 
         if ($transaction && $package) {
