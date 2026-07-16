@@ -847,6 +847,7 @@ const printReceipt = (transaction) => {
                                             :options="packageOptions" 
                                             placeholder="Pilih Paket..."
                                             :error="!!form.errors.package_id"
+                                            required
                                         />
                                         <div v-if="form.errors.package_id" class="small text-danger mt-1">{{ form.errors.package_id }}</div>
                                     </div>
@@ -902,7 +903,7 @@ const printReceipt = (transaction) => {
                                     <button type="button" @click="closeOrderModal" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
                                         Batal
                                     </button>
-                                    <button type="submit" :disabled="form.processing || !form.customer_name || !form.package_id || form.duration_hours < 0.5" class="bb-btn bb-btn--success flex-grow-1 py-3">
+                                    <button type="submit" :disabled="form.processing" class="bb-btn bb-btn--success flex-grow-1 py-3">
                                         <i class="bi bi-check2-circle me-1"></i> Mulai Sesi
                                     </button>
                                 </div>
