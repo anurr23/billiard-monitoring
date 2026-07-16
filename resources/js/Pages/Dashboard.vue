@@ -1118,37 +1118,37 @@ const printReceipt = (transaction) => {
                                 <i class="bi bi-pencil-square" style="font-size: 1.8rem; color: #6366f1;"></i>
                             </div>
                             <h5 class="fw-bold mb-1">Edit Sesi Aktif</h5>
-                            <p class="text-secondary small mb-0">Ubah paket atau durasi tanpa merubah jam mulai.</p>
+                            <p class="text-secondary small mb-0">Ubah detail pesanan tanpa merubah jam mulai.</p>
                         </div>
                         
                         <form @submit.prevent="submitEditSession" class="px-2">
-                            <!-- Paket -->
-                            <div class="mb-3">
-                                <label class="form-label small text-secondary mb-1">Paket Biliar</label>
-                                <select v-model="editSessionForm.package_id" class="bb-input w-100" required>
-                                    <option value="" disabled>Pilih Paket</option>
-                                    <option v-for="pkg in packages" :key="pkg.id" :value="pkg.id">
-                                        {{ pkg.name }} — {{ formatRupiah(pkg.price) }}/jam
-                                    </option>
-                                </select>
-                            </div>
+                            <div class="row g-3 mb-4">
+                                <!-- Nama Pelanggan -->
+                                <div class="col-12">
+                                    <label class="form-label small text-secondary mb-1">Nama Pelanggan</label>
+                                    <input type="text" :value="activeTransaction?.customer_name" readonly class="bb-input w-100" style="background: rgba(255,255,255,0.05); color: #9ca3af; cursor: not-allowed;" />
+                                </div>
 
-                            <!-- Durasi -->
-                            <div class="mb-4">
-                                <label class="form-label small text-secondary mb-1">Durasi (Jam)</label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="bb-btn bb-btn--ghost px-3 py-2" @click="editSessionForm.duration_hours = Math.max(0.5, editSessionForm.duration_hours - 0.5)">
-                                        <i class="bi bi-dash-lg"></i>
-                                    </button>
-                                    <input type="number" v-model="editSessionForm.duration_hours" class="bb-input text-center flex-grow-1 fs-5 fw-bold" step="0.5" min="0.5" required>
-                                    <button type="button" class="bb-btn bb-btn--ghost px-3 py-2" @click="editSessionForm.duration_hours += 0.5">
-                                        <i class="bi bi-plus-lg"></i>
-                                    </button>
+                                <!-- Paket -->
+                                <div class="col-8">
+                                    <label class="form-label small text-secondary mb-1">Paket Biliar</label>
+                                    <select v-model="editSessionForm.package_id" class="bb-input w-100" required>
+                                        <option value="" disabled>Pilih Paket</option>
+                                        <option v-for="pkg in packages" :key="pkg.id" :value="pkg.id">
+                                            {{ pkg.name }} — {{ formatRupiah(pkg.price) }}/jam
+                                        </option>
+                                    </select>
+                                </div>
+    
+                                <!-- Durasi -->
+                                <div class="col-4">
+                                    <label class="form-label small text-secondary mb-1">Jam</label>
+                                    <input type="number" v-model="editSessionForm.duration_hours" step="0.5" min="0.5" required class="bb-input w-100" />
                                 </div>
                             </div>
                             
                             <div class="d-flex gap-2 mt-4">
-                                <button type="button" @click="sessionTab = 'orders'" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
+                                <button type="button" @click="sessionTab = 'fnb'" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
                                     Batal
                                 </button>
                                 <button type="submit" :disabled="editSessionForm.processing || !editSessionForm.package_id" class="bb-btn bb-btn--primary flex-grow-1 py-3">
