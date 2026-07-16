@@ -291,7 +291,25 @@ const addFnbItem = (fnbItemId, transactionId) => {
 
 // Increment item quantity
 const incrementItem = (itemId) => {
-    router.patch(route('transaction-items.add', itemId), {}, {
+    router.patch(route('transaction-items.add', itemId), { change: 1 }, {
+        preserveScroll: true,
+        preserveState: false,
+    });
+};
+
+const decrementItem = (itemId) => {
+    router.patch(route('transaction-items.add', itemId), { change: -1 }, {
+        preserveScroll: true,
+        preserveState: false,
+    });
+};
+
+const updateItemQuantity = (itemId, newQty, currentQty) => {
+    if (newQty === currentQty) return;
+    const diff = newQty - currentQty;
+    if (diff === 0) return;
+    
+    router.patch(route('transaction-items.add', itemId), { change: diff }, {
         preserveScroll: true,
         preserveState: false,
     });
@@ -1099,13 +1117,22 @@ const printReceipt = (transaction) => {
                                             <div v-for="item in activeTransaction.items" :key="item.id" class="p-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
                                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                                     <span class="fw-bold small">{{ item.fnb_item?.name }}</span>
+                                                    <span class="fw-bold small" style="color: #10b981;">{{ formatRupiah(item.subtotal) }}</span>
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <span class="text-secondary small">{{ formatRupiah(item.price) }}</span>
                                                     <div class="d-flex align-items-center gap-1">
-                                                        <span class="fw-bold me-2" style="color: #10b981;">{{ formatRupiah(item.subtotal) }}</span>
-                                                        <span class="badge rounded-pill bg-secondary px-2">x{{ item.quantity }}</span>
-                                                        <button type="button" @click="incrementItem(item.id)" class="bb-btn bb-btn--ghost px-2 py-0 text-warning" style="font-size: 0.75rem;" title="Tambah">
+                                                        <button type="button" @click="decrementItem(item.id)" class="bb-btn bb-btn--ghost px-2 py-0 text-secondary" style="font-size: 0.75rem;">
+                                                            <i class="bi bi-dash-lg"></i>
+                                                        </button>
+                                                        <input type="number" 
+                                                            :value="item.quantity" 
+                                                            @change="updateItemQuantity(item.id, Number($event.target.value), item.quantity)" 
+                                                            min="0" 
+                                                            class="bb-input py-0 px-1 text-center" 
+                                                            style="width: 50px; height: 26px; font-size: 0.75rem; border: none; background: rgba(255,255,255,0.05);" 
+                                                        />
+                                                        <button type="button" @click="incrementItem(item.id)" class="bb-btn bb-btn--ghost px-2 py-0 text-warning" style="font-size: 0.75rem;">
                                                             <i class="bi bi-plus-lg"></i>
                                                         </button>
                                                     </div>
