@@ -20,7 +20,12 @@ const props = defineProps({
 });
 
 const fpConfig = { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd M Y' };
-const toYMD = (d) => d.toISOString().slice(0, 10);
+const toYMD = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 const startDate = ref(props.startDate || '');
 const endDate = ref(props.endDate || '');
@@ -31,14 +36,14 @@ const activePreset = ref(null);
 
 const checkInitialPreset = () => {
     if (!startDate.value || !endDate.value) return;
-    const s = new Date(startDate.value);
-    const e = new Date(endDate.value);
+    const s = new Date(startDate.value + 'T00:00:00');
+    const e = new Date(endDate.value + 'T00:00:00');
     const now = new Date();
     
     // Check if it's "Bulan Ini"
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     
-    if (s.getTime() === firstDay.getTime() && e.toDateString() === now.toDateString()) {
+    if (s.getTime() === firstDay.getTime() && e.getFullYear() === now.getFullYear() && e.getMonth() === now.getMonth() && e.getDate() === now.getDate()) {
         activePreset.value = 'Bulan Ini';
     }
 };
