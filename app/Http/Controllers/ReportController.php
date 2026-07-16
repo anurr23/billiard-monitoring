@@ -6,6 +6,7 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\Table;
 use App\Models\Package;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -117,7 +118,9 @@ class ReportController extends Controller
 
     public function analytics(Request $request)
     {
-        $startDate = $request->input('start_date', now()->toDateString());
+        // For the graph to be meaningful when filtering by 'Hari Ini' (today),
+        // we default to fetching the current month's data if no dates are provided.
+        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', now()->toDateString());
 
         $completedTransactions = Transaction::where('status', 'completed')

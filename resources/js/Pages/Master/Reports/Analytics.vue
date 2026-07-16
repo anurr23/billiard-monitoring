@@ -24,7 +24,25 @@ const toYMD = (d) => d.toISOString().slice(0, 10);
 
 const startDate = ref(props.startDate || '');
 const endDate = ref(props.endDate || '');
+
+// By default if there's no props passed yet (initial load), it shows the current month in the backend. 
+// We should match the active preset visually to "Bulan Ini" if it's the initial load month range.
 const activePreset = ref(null);
+
+const checkInitialPreset = () => {
+    if (!startDate.value || !endDate.value) return;
+    const s = new Date(startDate.value);
+    const e = new Date(endDate.value);
+    const now = new Date();
+    
+    // Check if it's "Bulan Ini"
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    if (s.getTime() === firstDay.getTime() && e.toDateString() === now.toDateString()) {
+        activePreset.value = 'Bulan Ini';
+    }
+};
+checkInitialPreset();
 
 const presets = [
     { label: 'Hari Ini', days: 0 },
@@ -50,9 +68,11 @@ const setPreset = (preset) => {
         start = new Date();
     } else if (preset.days === 'month') {
         start = new Date(end.getFullYear(), end.getMonth(), 1);
+        activePreset.value = 'Bulan Ini';
     } else {
         start = new Date();
         start.setDate(start.getDate() - preset.days);
+        activePreset.value = preset.label;
     }
 
     startDate.value = toYMD(start);
