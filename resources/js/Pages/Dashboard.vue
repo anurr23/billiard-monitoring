@@ -605,10 +605,11 @@ const printReceipt = (transaction) => {
                                             <div class="mt-2 fw-semibold">Available</div>
                                         </div>
                                     </template>
-                                </div>
-                            </div>
-                        </div>
                     </div>
+
+                </div>
+            </div>
+        </div>
 
                     <!-- Empty State -->
                     <div v-if="filteredTables.length === 0" class="col-12">
@@ -920,7 +921,7 @@ const printReceipt = (transaction) => {
         <!-- Session Detail Modal (Active Table — with F&B)     -->
         <!-- ═══════════════════════════════════════════════════ -->
         <div v-if="showSessionModal && selectedActiveTable" class="bb-modal-backdrop">
-            <div class="bb-modal" style="max-width: 900px; width: 95%;">
+            <div class="bb-modal" style="max-width: 1240px; width: 95%;">
                 <!-- Header: Table info + countdown -->
                 <div class="bb-modal-header">
                     <div class="d-flex align-items-center gap-3 flex-grow-1">
@@ -943,123 +944,20 @@ const printReceipt = (transaction) => {
                     </button>
                 </div>
 
-                <!-- Tab Navigation -->
                 <div class="d-flex gap-1 px-4 pt-3" style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                    <button @click="sessionTab = 'fnb'" 
-                            :class="['bb-btn bb-btn--sm rounded-bottom-0 px-3 py-2', sessionTab === 'fnb' ? 'bb-btn--success' : 'bb-btn--ghost']">
-                        <i class="bi bi-cup-hot-fill me-1"></i> Pesan F&B
+                    <button @click="sessionTab = 'edit'" 
+                            :class="['bb-btn bb-btn--sm rounded-bottom-0 px-3 py-2', sessionTab === 'edit' ? 'bb-btn--primary' : 'bb-btn--ghost']">
+                        <i class="bi bi-pencil-square me-1"></i> Edit Sesi & Pesanan
                     </button>
-                    <button @click="sessionTab = 'orders'" 
-                            :class="['bb-btn bb-btn--sm rounded-bottom-0 px-3 py-2', sessionTab === 'orders' ? 'bb-btn--success' : 'bb-btn--ghost']">
-                        <i class="bi bi-receipt me-1"></i> Pesanan
-                        <span v-if="activeTransaction?.items?.length > 0" class="badge rounded-pill ms-1" style="background: rgba(16,185,129,0.2); color: #10b981; font-size: 0.65rem;">
-                            {{ getItemCount(activeTransaction) }}
-                        </span>
+                    <button @click="sessionTab = 'checkout'" 
+                            :class="['bb-btn bb-btn--sm rounded-bottom-0 px-3 py-2', sessionTab === 'checkout' ? 'bb-btn--danger' : 'bb-btn--ghost']">
+                        <i class="bi bi-cash-stack me-1"></i> Checkout
                     </button>
                 </div>
 
-                <!-- Tab Content -->
-                <div class="bb-modal-body" style="min-height: 350px; max-height: 60vh; overflow-y: auto;">
+                <div class="bb-modal-body p-4">
                     
-                    <!-- TAB: Pesan F&B -->
-                    <div v-if="sessionTab === 'fnb'">
-                        <!-- Search + Category Filter -->
-                        <div class="d-flex gap-2 mb-3 flex-wrap">
-                            <div class="position-relative flex-grow-1">
-                                <input type="text" v-model="fnbSearch" class="bb-input py-2 px-3" placeholder="Cari menu..." style="font-size: 0.85rem; padding-left: 2.2rem !important;" />
-                                <i class="bi bi-search position-absolute top-50 translate-middle-y text-secondary opacity-75" style="left: 0.75rem; font-size: 0.8rem;"></i>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-1 mb-3 flex-wrap">
-                            <button @click="fnbCategoryFilter = 'all'" :class="['bb-btn bb-btn--sm', fnbCategoryFilter === 'all' ? 'bb-btn--success' : 'bb-btn--ghost']" style="font-size: 0.75rem;">
-                                Semua
-                            </button>
-                            <button v-for="cat in fnbCategories" :key="cat"
-                                    @click="fnbCategoryFilter = cat"
-                                    :class="['bb-btn bb-btn--sm', fnbCategoryFilter === cat ? 'bb-btn--success' : 'bb-btn--ghost']" style="font-size: 0.75rem;">
-                                {{ cat }}
-                            </button>
-                        </div>
-
-                        <!-- Menu Grid -->
-                        <div v-if="filteredFnbItems.length > 0" class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
-                            <div v-for="item in filteredFnbItems" :key="item.id" 
-                                 class="bb-table-card p-0 overflow-hidden d-flex flex-column" style="border-radius: 0.75rem;">
-                                <!-- Image -->
-                                <div v-if="item.image_url" style="height: 100px; overflow: hidden;">
-                                    <img :src="item.image_url" :alt="item.name" class="w-100 h-100" style="object-fit: cover;" />
-                                </div>
-                                <div v-else class="d-flex align-items-center justify-content-center" style="height: 100px; background: rgba(255,255,255,0.03);">
-                                    <i class="bi bi-cup-hot" style="font-size: 2rem; opacity: 0.15;"></i>
-                                </div>
-                                <!-- Info -->
-                                <div class="p-2 d-flex flex-column flex-grow-1">
-                                    <div class="fw-bold small text-truncate mb-1">{{ item.name }}</div>
-                                    <div class="text-secondary" style="font-size: 0.7rem;" v-if="item.category">{{ item.category }}</div>
-                                    <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
-                                        <span class="fw-bold small" style="color: #10b981;">{{ formatRupiah(item.price) }}</span>
-                                        <button @click.stop="addFnbItem(item.id, activeTransaction.id)" class="bb-btn bb-btn--success bb-btn--sm px-2 py-1" style="font-size: 0.7rem;">
-                                            <i class="bi bi-plus-lg"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div v-else class="text-center py-5 text-secondary opacity-50">
-                            <i class="bi bi-search fs-2 d-block mb-2"></i>
-                            <div class="small">{{ fnbSearch ? 'Menu tidak ditemukan' : 'Belum ada menu F&B' }}</div>
-                        </div>
-                    </div>
-
-                    <!-- TAB: Pesanan -->
-                    <div v-if="sessionTab === 'orders'">
-                        <div v-if="activeTransaction?.items?.length > 0">
-                            <div class="d-flex flex-column gap-2">
-                                <div v-for="item in activeTransaction.items" :key="item.id" class="bb-history-item p-3 rounded-3">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <!-- Image -->
-                                        <div class="flex-shrink-0 rounded overflow-hidden" style="width: 44px; height: 44px;">
-                                            <img v-if="item.fnb_item?.image_url" :src="item.fnb_item.image_url" class="w-100 h-100" style="object-fit: cover;" />
-                                            <div v-else class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.05);">
-                                                <i class="bi bi-cup-hot" style="opacity: 0.3;"></i>
-                                            </div>
-                                        </div>
-                                        <!-- Info -->
-                                        <div class="flex-grow-1">
-                                            <div class="fw-bold small">{{ item.fnb_item?.name || 'Item' }}</div>
-                                            <div class="text-secondary" style="font-size: 0.72rem;">
-                                                {{ formatRupiah(item.price) }} × {{ item.quantity }}
-                                            </div>
-                                        </div>
-                                        <!-- Qty + Subtotal -->
-                                        <div class="d-flex align-items-center gap-2">
-                                            <button @click="incrementItem(item.id)" class="bb-btn bb-btn--ghost bb-btn--sm px-2 py-1" style="font-size: 0.75rem;" title="Tambah 1">
-                                                <i class="bi bi-plus-lg"></i>
-                                            </button>
-                                            <span class="fw-bold" style="min-width: 70px; text-align: right; color: #10b981;">
-                                                {{ formatRupiah(item.subtotal) }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Total F&B -->
-                            <div class="mt-3 p-3 rounded-3 d-flex justify-content-between align-items-center" style="background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.12);">
-                                <span class="fw-bold">Total F&B</span>
-                                <span class="fw-bold fs-5 text-gradient">{{ formatRupiah(activeTransaction.fnb_cost) }}</span>
-                            </div>
-                        </div>
-                        <div v-else class="text-center py-5 text-secondary opacity-50">
-                            <i class="bi bi-receipt fs-2 d-block mb-2"></i>
-                            <div class="small">Belum ada pesanan F&B</div>
-                            <button @click="sessionTab = 'fnb'" class="bb-btn bb-btn--ghost bb-btn--sm mt-2">
-                                <i class="bi bi-plus-lg me-1"></i> Pesan Sekarang
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- TAB: Checkout -->
+                    <!-- TAB: Checkout (Moved outside of tab wrapper so we can just use v-if without breaking layout) -->
                     <div v-if="sessionTab === 'checkout'">
                         <div class="text-center mb-4">
                             <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 64px; height: 64px; background: rgba(239,68,68,0.1);">
@@ -1113,47 +1011,118 @@ const printReceipt = (transaction) => {
 
                     <!-- TAB: Edit Sesi -->
                     <div v-if="sessionTab === 'edit'">
-                        <div class="text-center mb-4">
-                            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 64px; height: 64px; background: rgba(99,102,241,0.1);">
-                                <i class="bi bi-pencil-square" style="font-size: 1.8rem; color: #6366f1;"></i>
-                            </div>
-                            <h5 class="fw-bold mb-1">Edit Sesi Aktif</h5>
-                            <p class="text-secondary small mb-0">Ubah detail pesanan tanpa merubah jam mulai.</p>
-                        </div>
-                        
-                        <form @submit.prevent="submitEditSession" class="px-2">
-                            <div class="row g-3 mb-4">
-                                <!-- Nama Pelanggan -->
-                                <div class="col-12">
-                                    <label class="form-label small text-secondary mb-1">Nama Pelanggan</label>
-                                    <input type="text" :value="activeTransaction?.customer_name" readonly class="bb-input w-100" style="background: rgba(255,255,255,0.05); color: #9ca3af; cursor: not-allowed;" />
+                        <form @submit.prevent="submitEditSession">
+                            <div class="row g-4">
+                                <!-- Left: F&B Menu -->
+                                <div class="col-md-6 border-end" style="border-color: rgba(255,255,255,0.1) !important;">
+                                    <h6 class="fw-bold mb-3"><i class="bi bi-cup-hot-fill text-warning me-2"></i>Pesan F&B (Sesi Aktif)</h6>
+                                    
+                                    <!-- Search + Category Filter -->
+                                    <div class="mb-3 d-flex gap-2">
+                                        <div class="position-relative flex-grow-1">
+                                            <i class="bi bi-search position-absolute top-50 translate-middle-y ms-3 text-secondary"></i>
+                                            <input type="text" v-model="fnbSearch" class="bb-input ps-5" placeholder="Cari menu F&B..." />
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2 overflow-auto pb-2 mb-3" style="scrollbar-width: none;">
+                                        <button type="button" @click="fnbCategoryFilter = 'all'" :class="['bb-btn bb-btn--sm flex-shrink-0', fnbCategoryFilter === 'all' ? 'bb-btn--warning' : 'bb-btn--ghost']">
+                                            Semua
+                                        </button>
+                                        <button type="button" v-for="cat in fnbCategories" :key="cat" @click="fnbCategoryFilter = cat" :class="['bb-btn bb-btn--sm flex-shrink-0', fnbCategoryFilter === cat ? 'bb-btn--warning' : 'bb-btn--ghost']">
+                                            {{ cat }}
+                                        </button>
+                                    </div>
+            
+                                    <!-- Menu Grid -->
+                                    <div v-if="filteredFnbItems.length > 0" class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); max-height: 380px; overflow-y: auto; padding-right: 5px;">
+                                        <div v-for="item in filteredFnbItems" :key="item.id" class="bb-table-card p-0 overflow-hidden d-flex flex-column" style="border-radius: 0.75rem; cursor: pointer;" @click="addFnbItem(item.id, activeTransaction.id)">
+                                            <!-- Image -->
+                                            <div v-if="item.image_url" style="height: 80px; overflow: hidden;">
+                                                <img :src="item.image_url" :alt="item.name" class="w-100 h-100" style="object-fit: cover;" />
+                                            </div>
+                                            <div v-else class="d-flex align-items-center justify-content-center" style="height: 80px; background: rgba(255,255,255,0.03);">
+                                                <i class="bi bi-cup-hot" style="font-size: 1.5rem; opacity: 0.15;"></i>
+                                            </div>
+                                            <!-- Info -->
+                                            <div class="p-2 d-flex flex-column flex-grow-1">
+                                                <div class="fw-bold small text-truncate mb-1" style="font-size: 0.75rem;">{{ item.name }}</div>
+                                                <div class="d-flex justify-content-between align-items-center mt-auto pt-1">
+                                                    <span class="fw-bold small" style="color: #f59e0b; font-size: 0.7rem;">{{ formatRupiah(item.price) }}</span>
+                                                    <div class="bb-btn bb-btn--warning bb-btn--sm px-1 py-0" style="font-size: 0.6rem;">
+                                                        <i class="bi bi-plus-lg"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-center py-5 text-secondary opacity-50">
+                                        <i class="bi bi-search fs-2 d-block mb-2"></i>
+                                        <div class="small">{{ fnbSearch ? 'Menu tidak ditemukan' : 'Belum ada menu F&B' }}</div>
+                                    </div>
                                 </div>
+                                
+                                <!-- Right Column: Order Form -->
+                                <div class="col-md-6">
+                                    <h6 class="fw-bold mb-3"><i class="bi bi-card-list text-primary me-2"></i>Detail Pemesanan (Aktif)</h6>
+                                    
+                                    <div class="row g-3 mb-3">
+                                        <!-- Nama Pelanggan -->
+                                        <div class="col-12">
+                                            <label class="bb-label">Nama Pelanggan</label>
+                                            <input type="text" :value="activeTransaction?.customer_name" readonly class="bb-input" style="background: rgba(255,255,255,0.05); color: #9ca3af; cursor: not-allowed;" />
+                                        </div>
+        
+                                        <!-- Durasi -->
+                                        <div class="col-4 col-sm-3">
+                                            <label class="bb-label">Jam</label>
+                                            <input type="number" step="0.5" min="0.5" v-model="editSessionForm.duration_hours" required class="bb-input" />
+                                        </div>
 
-                                <!-- Paket -->
-                                <div class="col-8">
-                                    <label class="form-label small text-secondary mb-1">Paket Biliar</label>
-                                    <select v-model="editSessionForm.package_id" class="bb-input w-100" required>
-                                        <option value="" disabled>Pilih Paket</option>
-                                        <option v-for="pkg in packages" :key="pkg.id" :value="pkg.id">
-                                            {{ pkg.name }} — {{ formatRupiah(pkg.price) }}/jam
-                                        </option>
-                                    </select>
+                                        <!-- Paket -->
+                                        <div class="col-8 col-sm-9">
+                                            <label class="bb-label">Pilih Paket</label>
+                                            <select v-model="editSessionForm.package_id" class="bb-input w-100" required>
+                                                <option value="" disabled>Pilih Paket</option>
+                                                <option v-for="pkg in packages" :key="pkg.id" :value="pkg.id">
+                                                    {{ pkg.name }} — {{ formatRupiah(pkg.price) }}/jam
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="activeTransaction?.items?.length > 0" class="mb-3">
+                                        <h6 class="fw-bold mb-2 small d-flex justify-content-between align-items-center">
+                                            Keranjang F&B 
+                                            <span class="badge rounded-pill px-2 py-1" style="background: rgba(16,185,129,0.15); color: #10b981; font-size: 0.7rem;">{{ activeTransaction.items.length }}</span>
+                                        </h6>
+                                        <div class="d-flex flex-column gap-2" style="max-height: 150px; overflow-y: auto;">
+                                            <div v-for="item in activeTransaction.items" :key="item.id" class="p-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="fw-bold small">{{ item.fnb_item?.name }}</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-secondary small">{{ formatRupiah(item.price) }}</span>
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <span class="fw-bold me-2" style="color: #10b981;">{{ formatRupiah(item.subtotal) }}</span>
+                                                        <span class="badge rounded-pill bg-secondary px-2">x{{ item.quantity }}</span>
+                                                        <button type="button" @click="incrementItem(item.id)" class="bb-btn bb-btn--ghost px-2 py-0 text-warning" style="font-size: 0.75rem;" title="Tambah">
+                                                            <i class="bi bi-plus-lg"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2 mt-4">
+                                        <button type="button" @click="sessionTab = 'checkout'" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
+                                            Batal
+                                        </button>
+                                        <button type="submit" :disabled="editSessionForm.processing || !editSessionForm.package_id" class="bb-btn bb-btn--primary flex-grow-1 py-3">
+                                            <i class="bi bi-check-lg me-1"></i> Simpan Perubahan
+                                        </button>
+                                    </div>
                                 </div>
-    
-                                <!-- Durasi -->
-                                <div class="col-4">
-                                    <label class="form-label small text-secondary mb-1">Jam</label>
-                                    <input type="number" v-model="editSessionForm.duration_hours" step="0.5" min="0.5" required class="bb-input w-100" />
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex gap-2 mt-4">
-                                <button type="button" @click="sessionTab = 'fnb'" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
-                                    Batal
-                                </button>
-                                <button type="submit" :disabled="editSessionForm.processing || !editSessionForm.package_id" class="bb-btn bb-btn--primary flex-grow-1 py-3">
-                                    <i class="bi bi-check-lg me-1"></i> Simpan Perubahan
-                                </button>
                             </div>
                         </form>
                     </div>
