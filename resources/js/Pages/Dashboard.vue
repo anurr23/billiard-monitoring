@@ -659,9 +659,11 @@ const printReceipt = (transaction) => {
                         </div>
                         
                         <div v-if="selectedTableForHistory.status === 'active'">
-                            <button @click="showTableHistoryModal = false; openSessionModal(selectedTableForHistory)" class="bb-btn bb-btn--success bb-btn--sm">
-                                <i class="bi bi-box-arrow-in-right me-1"></i> Buka Sesi Aktif
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button @click="showTableHistoryModal = false; openSessionModal(selectedTableForHistory)" class="bb-btn bb-btn--success bb-btn--sm">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i> Buka Sesi Aktif
+                                </button>
+                            </div>
                         </div>
                         <div v-else>
                             <button @click="showTableHistoryModal = false; openOrderModal(selectedTableForHistory)" class="bb-btn bb-btn--primary bb-btn--sm">
@@ -716,9 +718,14 @@ const printReceipt = (transaction) => {
                                             <span class="text-secondary" style="font-size: 0.78rem;"><i class="bi bi-calendar3 me-1"></i>{{ formatDate(tx.start_time) }}</span>
                                         </div>
                                     </div>
-                                    <button @click="printReceipt({...tx, table_name: selectedTableForHistory.name})" class="bb-btn bb-btn--ghost bb-btn--sm" title="Cetak Struk" style="z-index: 2; position: relative;">
-                                        <i class="bi bi-printer"></i>
-                                    </button>
+                                    <div class="d-flex gap-1" style="z-index: 2; position: relative;">
+                                        <button v-if="tx.status === 'active'" @click.stop="showTableHistoryModal = false; openSessionModal(selectedTableForHistory); setTimeout(() => sessionTab = 'edit', 50);" class="bb-btn bb-btn--ghost bb-btn--sm text-primary" title="Edit Sesi">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button @click.stop="printReceipt({...tx, table_name: selectedTableForHistory.name})" class="bb-btn bb-btn--ghost bb-btn--sm" title="Cetak Struk">
+                                            <i class="bi bi-printer"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 
                                 <!-- Billiard details -->
@@ -953,14 +960,6 @@ const printReceipt = (transaction) => {
                         <span v-if="activeTransaction?.items?.length > 0" class="badge rounded-pill ms-1" style="background: rgba(16,185,129,0.2); color: #10b981; font-size: 0.65rem;">
                             {{ getItemCount(activeTransaction) }}
                         </span>
-                    </button>
-                    <button @click="sessionTab = 'checkout'" 
-                            :class="['bb-btn bb-btn--sm rounded-bottom-0 px-3 py-2', sessionTab === 'checkout' ? 'bb-btn--danger' : 'bb-btn--ghost']">
-                        <i class="bi bi-cash-stack me-1"></i> Checkout
-                    </button>
-                    <button @click="sessionTab = 'edit'" 
-                            :class="['bb-btn bb-btn--sm rounded-bottom-0 px-3 py-2', sessionTab === 'edit' ? 'bb-btn--primary' : 'bb-btn--ghost']">
-                        <i class="bi bi-pencil-square me-1"></i> Edit Sesi
                     </button>
                 </div>
 
