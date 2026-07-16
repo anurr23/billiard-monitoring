@@ -198,8 +198,9 @@ class TableController extends Controller
     private function controlRelay($channel, $state)
     {
         $scriptPath = base_path('app/Services/relay_controller.py');
-        // Warning: shell_exec can be dangerous if inputs are not sanitized, but here they are hardcoded integers/strings
-        $command = escapeshellcmd("python \"$scriptPath\" $channel $state");
+        // Use 'py' instead of 'python' on Windows environments if python command is not recognized, or check if py exists
+        $pyCmd = 'py';
+        $command = escapeshellcmd("$pyCmd \"$scriptPath\" $channel $state");
         shell_exec($command);
     }
 }
