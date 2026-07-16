@@ -16,11 +16,11 @@
 /node_modules
 /public/fonts-manifest.dev.json
 /public/hot
-# /public/storage
+!public/storage/*
 # /storage/*.key
 # /storage/pail
-# !/storage/app/public/user_photos
-# !/storage/app/public/fnb_images
+!/storage/app/public/user_photos
+!/storage/app/public/fnb_images
 _ide_helper.php
 Homestead.json
 Homestead.yaml
