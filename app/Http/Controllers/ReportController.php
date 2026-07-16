@@ -14,8 +14,8 @@ class ReportController extends Controller
 {
     public function fnbSales(Request $request)
     {
-        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
 
         $sales = TransactionItem::select(
                 'fnb_item_id',
@@ -50,8 +50,8 @@ class ReportController extends Controller
 
     public function tableTransactions(Request $request)
     {
-        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
 
         $transactions = Transaction::billiard()
             ->with(['table', 'package', 'user'])
@@ -81,8 +81,8 @@ class ReportController extends Controller
 
     public function revenue(Request $request)
     {
-        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
 
         $dailyRevenue = Transaction::where('status', 'completed')
             ->whereBetween(DB::raw("date(created_at)"), [$startDate, $endDate])
@@ -117,8 +117,8 @@ class ReportController extends Controller
 
     public function analytics(Request $request)
     {
-        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
 
         $completedTransactions = Transaction::where('status', 'completed')
             ->whereBetween(DB::raw("date(created_at)"), [$startDate, $endDate])

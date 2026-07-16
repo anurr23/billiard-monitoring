@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class DatabaseSeeder extends Seeder
 {
@@ -36,6 +37,16 @@ class DatabaseSeeder extends Seeder
         for($i = 1; $i <= 16; $i++) {
             \App\Models\Table::create(['name' => 'Meja ' . $i, 'relay_channel' => $i]);
         }
+
+        // Ensure fnb_images directory exists
+        Storage::disk('public')->makeDirectory('fnb_images');
+
+        $categoryColors = [
+            'Minuman Dingin' => ['bg' => '#e0f2fe', 'fg' => '#0284c7', 'icon' => "\u{1F9CA}"],
+            'Minuman Panas'  => ['bg' => '#fef3c7', 'fg' => '#d97706', 'icon' => "\u{2615}"],
+            'Snack'          => ['bg' => '#fce7f3', 'fg' => '#db2777', 'icon' => "\u{1F35F}"],
+            'Makanan'        => ['bg' => '#dcfce7', 'fg' => '#16a34a', 'icon' => "\u{1F35A}"],
+        ];
 
         $fnbItems = [
             // Minuman Dingin
@@ -75,7 +86,19 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($fnbItems as $item) {
-            \App\Models\FnbItem::create($item);
+            $colors = $categoryColors[$item['category']] ?? $categoryColors['Makanan'];
+            $initials = mb_strimwidth($item['name'], 0, 2);
+            $filename = 'fnb_images/' . \Illuminate\Support\Str::slug($item['name']) . '.svg';
+
+            $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">'
+                . '<rect width="200" height="200" rx="20" fill="' . $colors['bg'] . '"/>'
+                . '<text x="100" y="90" text-anchor="middle" font-size="64">' . $colors['icon'] . '</text>'
+                . '<text x="100" y="145" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="600" fill="' . $colors['fg'] . '">' . htmlspecialchars($item['name']) . '</text>'
+                . '</svg>';
+
+            Storage::disk('public')->put($filename, $svg);
+
+            \App\Models\FnbItem::create(array_merge($item, ['image_path' => $filename]));
         }
     }
 }

@@ -2,8 +2,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
-import { VueDatePicker } from '@vuepic/vue-datepicker';
-import '@vuepic/vue-datepicker/dist/main.css';
+import flatPickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
 
 const props = defineProps({
     hourlyStats: Array,
@@ -15,22 +15,11 @@ const props = defineProps({
     endDate: String,
 });
 
-const toDatePickerDate = (str) => {
-    if (!str) return null;
-    const [y, m, d] = str.split('-').map(Number);
-    return new Date(y, m - 1, d);
-};
+const fpConfig = { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd M Y' };
+const toYMD = (d) => d.toISOString().slice(0, 10);
 
-const toDateString = (date) => {
-    if (!date) return '';
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-};
-
-const startDate = ref(toDatePickerDate(props.startDate));
-const endDate = ref(toDatePickerDate(props.endDate));
+const startDate = ref(props.startDate || '');
+const endDate = ref(props.endDate || '');
 const activePreset = ref(null);
 
 const presets = [
@@ -43,8 +32,8 @@ const presets = [
 const applyFilter = () => {
     activePreset.value = null;
     router.get(route('reports.analytics'), {
-        start_date: toDateString(startDate.value),
-        end_date: toDateString(endDate.value),
+        start_date: startDate.value,
+        end_date: endDate.value,
     }, { preserveState: true });
 };
 
@@ -62,26 +51,36 @@ const setPreset = (preset) => {
         start.setDate(start.getDate() - preset.days);
     }
 
-    startDate.value = start;
-    endDate.value = end;
+    startDate.value = toYMD(start);
+    endDate.value = toYMD(end);
     applyFilter();
 };
 
 const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+    return 'Rp ' + new Intl.NumberFormat('id-ID').format(value || 0);
 };
 
 const formatNumber = (value) => {
-    return new Intl.NumberFormat('id-ID').format(value);
+    return new Intl.NumberFormat('id-ID').format(value || 0);
 };
 
 const formatDuration = (minutes) => {
-    if (!minutes || minutes < 1) return '0 menit';
+    if (!minutes || minutes < 1) return '0m';
     const hours = Math.floor(minutes / 60);
     const mins = Math.round(minutes % 60);
-    if (hours > 0) return `${hours} jam ${mins} menit`;
-    return `${mins} menit`;
+    if (hours > 0) return `${hours}j ${mins}m`;
+    return `${mins}m`;
 };
+
+const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+const displayRange = computed(() => {
+    if (!startDate.value || !endDate.value) return '';
+    return `${formatDate(startDate.value)} — ${formatDate(endDate.value)}`;
+});
 
 const peakHour = computed(() => {
     if (!props.hourlyStats?.length) return null;
@@ -90,397 +89,441 @@ const peakHour = computed(() => {
 
 const topTable = computed(() => {
     if (!props.tableUtilization?.length) return null;
-    return props.tableUtilization[0];
+    return props.tableUtilization.find(t => t.transactions > 0) || null;
 });
 
 const topPackage = computed(() => {
     if (!props.packageStats?.length) return null;
-    return props.packageStats[0];
+    return props.packageStats.find(p => p.transactions > 0) || null;
+});
+
+const totalHourlyTx = computed(() => {
+    return props.hourlyStats?.reduce((sum, s) => sum + s.transactions, 0) || 1;
+});
+
+const maxTableTx = computed(() => {
+    return Math.max(...(props.tableUtilization?.map(t => t.transactions) || [1]), 1);
 });
 </script>
 
 <template>
-    <AuthenticatedLayout>
-        <Head title="Analitik" />
+    <Head title="Analitik" />
 
+    <AuthenticatedLayout>
         <template #header>
             <h1 class="bb-header-title"><i class="bi bi-graph-up-arrow me-2" style="color: #8b5cf6;"></i>Analitik</h1>
         </template>
 
-        <div class="p-4">
-            <!-- Filter Section -->
-            <div class="bb-card mb-4">
-                <div class="card-body">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-3">
-                            <label class="form-label fw-medium small">Tanggal Mulai</label>
-                            <VueDatePicker v-model="startDate" :disabledDates="{ after: new Date() }" placeholder="Pilih tanggal" class="w-100" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-medium small">Tanggal Akhir</label>
-                            <VueDatePicker v-model="endDate" :disabledDates="{ after: new Date() }" placeholder="Pilih tanggal" class="w-100" />
-                        </div>
-                        <div class="col-md-3">
-                            <div class="d-flex gap-2 flex-wrap">
-                                <button v-for="p in presets" :key="p.label" type="button" class="btn btn-sm" :class="activePreset === p.label ? 'btn-primary' : 'btn-outline-secondary'" @click="setPreset(p)">
-                                    {{ p.label }}
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-3 text-md-end">
-                            <button type="button" class="btn btn-primary" @click="applyFilter">
-                                <i class="bi bi-filter me-1"></i> Terapkan
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <!-- Date Filter -->
+        <div class="bb-card mb-4">
+            <div class="bb-card-header d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-calendar-range me-2"></i>Filter Periode</h6>
+                <span class="small text-secondary">{{ displayRange }}</span>
             </div>
-
-            <!-- Summary Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-xl-3 col-md-6">
-                    <div class="bb-card stat-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted small mb-1">Total Transaksi</p>
-                                    <h3 class="fw-bold mb-0">{{ formatNumber(summary.total_transactions) }}</h3>
-                                </div>
-                                <div class="stat-icon bg-primary bg-opacity-10 text-primary rounded-3 p-3">
-                                    <i class="bi bi-receipt fs-4"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="bb-card-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button
+                        v-for="preset in presets"
+                        :key="preset.label"
+                        @click="setPreset(preset)"
+                        class="bb-btn"
+                        :class="activePreset === preset.label ? 'bb-btn--primary' : 'bb-btn--ghost'"
+                        style="font-size: 0.8rem; text-transform: none; border-radius: 100px; padding: 6px 18px;"
+                    >
+                        {{ preset.label }}
+                    </button>
                 </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="bb-card stat-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted small mb-1">Total Pendapatan</p>
-                                    <h3 class="fw-bold mb-0 text-success">{{ formatCurrency(summary.total_revenue) }}</h3>
-                                </div>
-                                <div class="stat-icon bg-success bg-opacity-10 text-success rounded-3 p-3">
-                                    <i class="bi bi-currency-rupee fs-4"></i>
-                                </div>
-                            </div>
-                        </div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="bb-label">
+                            <i class="bi bi-calendar3 me-1"></i> Dari Tanggal
+                        </label>
+                        <flat-pickr
+                            v-model="startDate"
+                            :config="fpConfig"
+                            class="form-control"
+                            placeholder="Pilih tanggal"
+                        />
                     </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="bb-card stat-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted small mb-1">Rata-rata Transaksi</p>
-                                    <h3 class="fw-bold mb-0">{{ formatCurrency(summary.avg_transaction_value) }}</h3>
-                                </div>
-                                <div class="stat-icon bg-warning bg-opacity-10 text-warning rounded-3 p-3">
-                                    <i class="bi bi-calculator fs-4"></i>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-4">
+                        <label class="bb-label">
+                            <i class="bi bi-calendar3 me-1"></i> Sampai Tanggal
+                        </label>
+                        <flat-pickr
+                            v-model="endDate"
+                            :config="fpConfig"
+                            class="form-control"
+                            placeholder="Pilih tanggal"
+                        />
                     </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="bb-card stat-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted small mb-1">Rata-rata Durasi</p>
-                                    <h3 class="fw-bold mb-0">{{ formatDuration(summary.avg_duration) }}</h3>
-                                </div>
-                                <div class="stat-icon bg-info bg-opacity-10 text-info rounded-3 p-3">
-                                    <i class="bi bi-clock fs-4"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Revenue Breakdown -->
-            <div class="row g-3 mb-4">
-                <div class="col-xl-4 col-md-6">
-                    <div class="bb-card stat-card border-start border-4 border-primary">
-                        <div class="card-body">
-                            <p class="text-muted small mb-1">Pendapatan Billiard</p>
-                            <h4 class="fw-bold text-primary mb-0">{{ formatCurrency(summary.total_billiard) }}</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-4 col-md-6">
-                    <div class="bb-card stat-card border-start border-4 border-warning">
-                        <div class="card-body">
-                            <p class="text-muted small mb-1">Pendapatan F&B</p>
-                            <h4 class="fw-bold text-warning mb-0">{{ formatCurrency(summary.total_fnb) }}</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-4 col-md-6">
-                    <div class="bb-card stat-card border-start border-4 border-success">
-                        <div class="card-body">
-                            <p class="text-muted small mb-1">Meja Terpakai</p>
-                            <h4 class="fw-bold text-success mb-0">{{ summary.unique_tables_used }} / {{ tableUtilization.length }} Meja</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts & Tables -->
-            <div class="row g-4 mb-4">
-                <!-- Hourly Activity -->
-                <div class="col-xl-8">
-                    <div class="bb-card h-100">
-                        <div class="card-header bg-transparent border-0">
-                            <h5 class="fw-semibold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Aktivitas Per Jam</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive" v-if="hourlyStats.length">
-                                <table class="table table-hover mb-0 align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Jam</th>
-                                            <th class="text-center">Transaksi</th>
-                                            <th class="text-end">Pendapatan</th>
-                                            <th class="text-center">Rata-rata Durasi</th>
-                                            <th class="text-center">Persentase</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="h in hourlyStats" :key="h.hour">
-                                            <td class="fw-medium">{{ h.hour }}</td>
-                                            <td class="text-center">{{ h.transactions }}</td>
-                                            <td class="text-end fw-medium text-success">{{ formatCurrency(h.revenue) }}</td>
-                                            <td class="text-center">{{ formatDuration(h.avg_duration) }}</td>
-                                            <td class="text-center">
-                                                <div class="progress" style="height: 6px; width: 100px;" :title="((h.transactions / (hourlyStats.reduce((sum, s) => sum + s.transactions, 0) || 1)) * 100).toFixed(1) + '%'">
-                                                    <div class="progress-bar bg-primary" :style="{ width: ((h.transactions / (hourlyStats.reduce((sum, s) => sum + s.transactions, 0) || 1)) * 100).toFixed(1) + '%' }"></div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div v-else class="text-center py-5 text-muted">
-                                <i class="bi bi-clock-history fs-1 d-block mb-2 opacity-25"></i>
-                                Tidak ada data aktivitas
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Peak Insights -->
-                <div class="col-xl-4">
-                    <div class="bb-card h-100">
-                        <div class="card-header bg-transparent border-0">
-                            <h5 class="fw-semibold mb-0"><i class="bi bi-lightning-charge me-2 text-warning"></i>Insight Puncak</h5>
-                        </div>
-                        <div class="card-body">
-                            <div v-if="peakHour" class="mb-4 p-3 rounded-3 bg-primary bg-opacity-10">
-                                <div class="d-flex align-items-center mb-2">
-                                    <div class="bg-primary rounded-circle p-2 me-3">
-                                        <i class="bi bi-clock text-white"></i>
-                                    </div>
-                                    <div>
-                                        <div class="small text-muted">Jam Sibuk Terbanyak</div>
-                                        <div class="fw-bold fs-5">{{ peakHour.hour }} ({{ peakHour.transactions }} transaksi)</div>
-                                    </div>
-                                </div>
-                                <div class="text-muted small">Pendapatan: {{ formatCurrency(peakHour.revenue) }}</div>
-                            </div>
-
-                            <div v-if="topTable" class="mb-4 p-3 rounded-3 bg-success bg-opacity-10">
-                                <div class="d-flex align-items-center mb-2">
-                                    <div class="bg-success rounded-circle p-2 me-3">
-                                        <i class="bi bi-table text-white"></i>
-                                    </div>
-                                    <div>
-                                        <div class="small text-muted">Meja Terlaris</div>
-                                        <div class="fw-bold fs-5">{{ topTable.table_name }} (No. {{ topTable.table_number }})</div>
-                                    </div>
-                                </div>
-                                <div class="row text-center text-muted small g-0">
-                                    <div class="col-6 border-end">
-                                        <div class="fw-bold">{{ formatCurrency(topTable.revenue) }}</div>
-                                        <div>Pendapatan</div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="fw-bold">{{ topTable.total_hours }} jam</div>
-                                        <div>Total Jam</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div v-if="topPackage" class="p-3 rounded-3 bg-info bg-opacity-10">
-                                <div class="d-flex align-items-center mb-2">
-                                    <div class="bg-info rounded-circle p-2 me-3">
-                                        <i class="bi bi-tag-fill text-white"></i>
-                                    </div>
-                                    <div>
-                                        <div class="small text-muted">Paket Terpopuler</div>
-                                        <div class="fw-bold fs-5">{{ topPackage.name }}</div>
-                                    </div>
-                                </div>
-                                <div class="row text-center text-muted small g-0">
-                                    <div class="col-6 border-end">
-                                        <div class="fw-bold">{{ topPackage.transactions }}x</div>
-                                        <div>Transaksi</div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="fw-bold">{{ formatCurrency(topPackage.revenue) }}</div>
-                                        <div>Pendapatan</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table Utilization & Package Performance -->
-            <div class="row g-4 mb-4">
-                <div class="col-xl-7">
-                    <div class="bb-card">
-                        <div class="card-header bg-transparent border-0">
-                            <h5 class="fw-semibold mb-0"><i class="bi bi-table me-2 text-success"></i>Utilisasi Meja</h5>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive" v-if="tableUtilization.length">
-                                <table class="table table-hover mb-0 align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Meja</th>
-                                            <th class="text-center">Transaksi</th>
-                                            <th class="text-center">Total Jam</th>
-                                            <th class="text-end">Pendapatan</th>
-                                            <th class="text-center">Utilisasi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="t in tableUtilization" :key="t.table_number">
-                                            <td>
-                                                <div class="fw-medium">{{ t.table_name }}</div>
-                                                <div class="small text-muted">No. {{ t.table_number }}</div>
-                                            </td>
-                                            <td class="text-center">{{ t.transactions }}</td>
-                                            <td class="text-center">{{ t.total_hours }} jam</td>
-                                            <td class="text-end fw-medium text-success">{{ formatCurrency(t.revenue) }}</td>
-                                            <td class="text-center">
-                                                <div class="progress" style="height: 6px; width: 80px;" :title="((t.transactions / (tableUtilization.reduce((sum, s) => sum + s.transactions, 0) || 1)) * 100).toFixed(1) + '%'">
-                                                    <div class="progress-bar bg-success" :style="{ width: ((t.transactions / (tableUtilization.reduce((sum, s) => sum + s.transactions, 0) || 1)) * 100).toFixed(1) + '%' }"></div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div v-else class="text-center py-5 text-muted">
-                                <i class="bi bi-table fs-1 d-block mb-2 opacity-25"></i>
-                                Tidak ada data utilisasi
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-5">
-                    <div class="bb-card">
-                        <div class="card-header bg-transparent border-0">
-                            <h5 class="fw-semibold mb-0"><i class="bi bi-tag-fill me-2 text-warning"></i>Performa Paket</h5>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive" v-if="packageStats.length">
-                                <table class="table table-hover mb-0 align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Paket</th>
-                                            <th class="text-center">Transaksi</th>
-                                            <th class="text-center">Total Jam</th>
-                                            <th class="text-end">Pendapatan</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="p in packageStats" :key="p.name">
-                                            <td>
-                                                <div class="fw-medium">{{ p.name }}</div>
-                                                <div class="small text-muted">{{ formatCurrency(p.price_per_hour) }}/jam</div>
-                                            </td>
-                                            <td class="text-center">{{ p.transactions }}</td>
-                                            <td class="text-center">{{ p.total_hours }} jam</td>
-                                            <td class="text-end fw-medium text-success">{{ formatCurrency(p.revenue) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div v-else class="text-center py-5 text-muted">
-                                <i class="bi bi-tag-fill fs-1 d-block mb-2 opacity-25"></i>
-                                Tidak ada data paket
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Daily Trend -->
-            <div class="bb-card">
-                <div class="card-header bg-transparent border-0">
-                    <h5 class="fw-semibold mb-0"><i class="bi bi-calendar-event me-2 text-info"></i>Tren Harian</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" v-if="dailyStats.length">
-                        <table class="table table-hover mb-0 align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Tanggal</th>
-                                    <th class="text-center">Transaksi</th>
-                                    <th class="text-end">Total Pendapatan</th>
-                                    <th class="text-end">Billiard</th>
-                                    <th class="text-end">F&B</th>
-                                    <th class="text-center">Rata-rata Durasi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="d in dailyStats" :key="d.date">
-                                    <td class="fw-medium">{{ new Date(d.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) }}</td>
-                                    <td class="text-center">{{ d.transactions }}</td>
-                                    <td class="text-end fw-bold">{{ formatCurrency(d.revenue) }}</td>
-                                    <td class="text-end text-primary">{{ formatCurrency(d.billiard_revenue) }}</td>
-                                    <td class="text-end text-warning">{{ formatCurrency(d.fnb_revenue) }}</td>
-                                    <td class="text-center">{{ formatDuration(d.avg_duration) }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div v-else class="text-center py-5 text-muted">
-                        <i class="bi bi-calendar-event fs-1 d-block mb-2 opacity-25"></i>
-                        Tidak ada data tren harian
+                    <div class="col-md-4 d-flex gap-2">
+                        <button @click="applyFilter" class="bb-btn bb-btn--primary flex-grow-1 py-3">
+                            <i class="bi bi-funnel me-2"></i>Terapkan
+                        </button>
+                        <button
+                            @click="router.get(route('reports.analytics'), { start_date: '', end_date: '' }, { preserveState: true })"
+                            class="bb-btn bb-btn--ghost px-3"
+                            title="Reset"
+                        >
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Summary Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="bb-card">
+                    <div class="bb-card-body text-center">
+                        <div class="text-secondary small mb-1">Total Transaksi</div>
+                        <div class="fs-4 fw-bold" style="color: #6366f1;">{{ formatNumber(summary.total_transactions) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="bb-card">
+                    <div class="bb-card-body text-center">
+                        <div class="text-secondary small mb-1">Total Pendapatan</div>
+                        <div class="fs-4 fw-bold" style="color: #10b981;">{{ formatCurrency(summary.total_revenue) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="bb-card">
+                    <div class="bb-card-body text-center">
+                        <div class="text-secondary small mb-1">Rata-rata / Transaksi</div>
+                        <div class="fs-4 fw-bold" style="color: #f59e0b;">{{ formatCurrency(summary.avg_transaction_value) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="bb-card">
+                    <div class="bb-card-body text-center">
+                        <div class="text-secondary small mb-1">Rata-rata Durasi</div>
+                        <div class="fs-4 fw-bold" style="color: #8b5cf6;">{{ formatDuration(summary.avg_duration) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue Breakdown -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="bb-card">
+                    <div class="bb-card-body d-flex align-items-center gap-3">
+                        <div class="analytics-icon" style="background: rgba(99,102,241,0.1); color: #6366f1;">
+                            <i class="bi bi-dribbble"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small">Pendapatan Billiard</div>
+                            <div class="fs-5 fw-bold">{{ formatCurrency(summary.total_billiard) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="bb-card">
+                    <div class="bb-card-body d-flex align-items-center gap-3">
+                        <div class="analytics-icon" style="background: rgba(245,158,11,0.1); color: #f59e0b;">
+                            <i class="bi bi-cup-hot-fill"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small">Pendapatan F&B</div>
+                            <div class="fs-5 fw-bold">{{ formatCurrency(summary.total_fnb) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="bb-card">
+                    <div class="bb-card-body d-flex align-items-center gap-3">
+                        <div class="analytics-icon" style="background: rgba(16,185,129,0.1); color: #10b981;">
+                            <i class="bi bi-columns-gap"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small">Meja Terpakai</div>
+                            <div class="fs-5 fw-bold">{{ summary.unique_tables_used }} / {{ tableUtilization.length }} Meja</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insight Cards -->
+        <div class="row g-3 mb-4" v-if="peakHour || topTable || topPackage">
+            <div class="col-md-4" v-if="peakHour">
+                <div class="bb-card h-100">
+                    <div class="bb-card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="analytics-icon" style="background: rgba(99,102,241,0.1); color: #6366f1;">
+                                <i class="bi bi-clock-fill"></i>
+                            </div>
+                            <div>
+                                <div class="text-secondary small">Jam Tersibuk</div>
+                                <div class="fs-5 fw-bold">{{ peakHour.hour }}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between small" style="opacity: 0.7;">
+                            <span>{{ peakHour.transactions }} transaksi</span>
+                            <span class="fw-bold">{{ formatCurrency(peakHour.revenue) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" v-if="topTable">
+                <div class="bb-card h-100">
+                    <div class="bb-card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="analytics-icon" style="background: rgba(16,185,129,0.1); color: #10b981;">
+                                <i class="bi bi-trophy-fill"></i>
+                            </div>
+                            <div>
+                                <div class="text-secondary small">Meja Terlaris</div>
+                                <div class="fs-5 fw-bold">{{ topTable.table_name }}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between small" style="opacity: 0.7;">
+                            <span>{{ topTable.total_hours }} jam</span>
+                            <span class="fw-bold">{{ formatCurrency(topTable.revenue) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" v-if="topPackage">
+                <div class="bb-card h-100">
+                    <div class="bb-card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="analytics-icon" style="background: rgba(245,158,11,0.1); color: #f59e0b;">
+                                <i class="bi bi-tag-fill"></i>
+                            </div>
+                            <div>
+                                <div class="text-secondary small">Paket Terpopuler</div>
+                                <div class="fs-5 fw-bold">{{ topPackage.name }}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between small" style="opacity: 0.7;">
+                            <span>{{ topPackage.transactions }}x transaksi</span>
+                            <span class="fw-bold">{{ formatCurrency(topPackage.revenue) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hourly Activity -->
+        <div class="bb-card mb-4">
+            <div class="bb-card-header d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Aktivitas Per Jam</h6>
+                <span class="bb-badge" style="background: rgba(99,102,241,0.1); color: #6366f1;" v-if="hourlyStats.length">
+                    {{ hourlyStats.length }} Jam Aktif
+                </span>
+            </div>
+            <div class="bb-card-body p-0">
+                <div class="table-responsive" v-if="hourlyStats.length">
+                    <table class="bb-table">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Jam</th>
+                                <th class="text-center">Transaksi</th>
+                                <th class="text-end">Pendapatan</th>
+                                <th class="text-center">Durasi Rata-rata</th>
+                                <th class="text-end pe-4" style="min-width: 140px;">Proporsi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="h in hourlyStats" :key="h.hour">
+                                <td class="ps-4 fw-bold">{{ h.hour }}</td>
+                                <td class="text-center font-monospace">{{ h.transactions }}</td>
+                                <td class="text-end font-monospace">{{ formatCurrency(h.revenue) }}</td>
+                                <td class="text-center">{{ formatDuration(h.avg_duration) }}</td>
+                                <td class="text-end pe-4">
+                                    <div class="d-flex align-items-center justify-content-end gap-2">
+                                        <span class="small font-monospace" style="opacity: 0.6; min-width: 36px; text-align: right;">{{ ((h.transactions / totalHourlyTx) * 100).toFixed(0) }}%</span>
+                                        <div class="analytics-bar-track">
+                                            <div class="analytics-bar" :style="{ width: ((h.transactions / totalHourlyTx) * 100) + '%' }"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-else class="text-center py-5" style="opacity: 0.4;">
+                    <i class="bi bi-clock-history d-block mb-2" style="font-size: 2rem;"></i>
+                    Tidak ada data aktivitas untuk periode ini
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Utilization & Package Performance -->
+        <div class="row g-4 mb-4">
+            <div class="col-xl-7">
+                <div class="bb-card h-100">
+                    <div class="bb-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0"><i class="bi bi-columns-gap me-2"></i>Utilisasi Meja</h6>
+                        <span class="bb-badge" style="background: rgba(16,185,129,0.1); color: #10b981;">
+                            {{ summary.unique_tables_used }} Aktif
+                        </span>
+                    </div>
+                    <div class="bb-card-body p-0">
+                        <div class="table-responsive" v-if="tableUtilization.some(t => t.transactions > 0)">
+                            <table class="bb-table">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">Meja</th>
+                                        <th class="text-center">Transaksi</th>
+                                        <th class="text-center">Jam</th>
+                                        <th class="text-end">Pendapatan</th>
+                                        <th class="text-end pe-4" style="min-width: 120px;">Utilisasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="t in tableUtilization.filter(t => t.transactions > 0)" :key="t.table_number">
+                                        <td class="ps-4">
+                                            <div class="fw-bold">{{ t.table_name }}</div>
+                                            <div class="small" style="opacity: 0.5;">No. {{ t.table_number }}</div>
+                                        </td>
+                                        <td class="text-center font-monospace">{{ t.transactions }}</td>
+                                        <td class="text-center font-monospace">{{ t.total_hours }}</td>
+                                        <td class="text-end font-monospace">{{ formatCurrency(t.revenue) }}</td>
+                                        <td class="text-end pe-4">
+                                            <div class="d-flex align-items-center justify-content-end gap-2">
+                                                <span class="small font-monospace" style="opacity: 0.6; min-width: 36px; text-align: right;">{{ ((t.transactions / maxTableTx) * 100).toFixed(0) }}%</span>
+                                                <div class="analytics-bar-track">
+                                                    <div class="analytics-bar" style="background: #10b981;" :style="{ width: ((t.transactions / maxTableTx) * 100) + '%' }"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-else class="text-center py-5" style="opacity: 0.4;">
+                            <i class="bi bi-columns-gap d-block mb-2" style="font-size: 2rem;"></i>
+                            Tidak ada data utilisasi meja
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-5">
+                <div class="bb-card h-100">
+                    <div class="bb-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0"><i class="bi bi-tag-fill me-2"></i>Performa Paket</h6>
+                        <span class="bb-badge" style="background: rgba(245,158,11,0.1); color: #f59e0b;">
+                            {{ packageStats.filter(p => p.transactions > 0).length }} Paket
+                        </span>
+                    </div>
+                    <div class="bb-card-body p-0">
+                        <div class="table-responsive" v-if="packageStats.some(p => p.transactions > 0)">
+                            <table class="bb-table">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">Paket</th>
+                                        <th class="text-center">Transaksi</th>
+                                        <th class="text-center">Jam</th>
+                                        <th class="text-end pe-4">Pendapatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="p in packageStats.filter(p => p.transactions > 0)" :key="p.name">
+                                        <td class="ps-4">
+                                            <div class="fw-bold">{{ p.name }}</div>
+                                            <div class="small" style="opacity: 0.5;">{{ formatCurrency(p.price_per_hour) }}/jam</div>
+                                        </td>
+                                        <td class="text-center font-monospace">{{ p.transactions }}</td>
+                                        <td class="text-center font-monospace">{{ p.total_hours }}</td>
+                                        <td class="text-end pe-4 font-monospace fw-bold">{{ formatCurrency(p.revenue) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-else class="text-center py-5" style="opacity: 0.4;">
+                            <i class="bi bi-tag-fill d-block mb-2" style="font-size: 2rem;"></i>
+                            Tidak ada data paket
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Trend -->
+        <div class="bb-card">
+            <div class="bb-card-header d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2"></i>Tren Harian</h6>
+                <span class="bb-badge" style="background: rgba(139,92,246,0.1); color: #8b5cf6;" v-if="dailyStats.length">
+                    {{ dailyStats.length }} Hari
+                </span>
+            </div>
+            <div class="bb-card-body p-0">
+                <div class="table-responsive" v-if="dailyStats.length">
+                    <table class="bb-table">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Tanggal</th>
+                                <th class="text-center">Transaksi</th>
+                                <th class="text-end">Billiard</th>
+                                <th class="text-end">F&B</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-center pe-4">Durasi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="d in dailyStats" :key="d.date">
+                                <td class="ps-4 fw-bold">{{ new Date(d.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' }) }}</td>
+                                <td class="text-center font-monospace">{{ d.transactions }}</td>
+                                <td class="text-end font-monospace">{{ formatCurrency(d.billiard_revenue) }}</td>
+                                <td class="text-end font-monospace">{{ formatCurrency(d.fnb_revenue) }}</td>
+                                <td class="text-end font-monospace fw-bold">{{ formatCurrency(d.revenue) }}</td>
+                                <td class="text-center pe-4">{{ formatDuration(d.avg_duration) }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot v-if="dailyStats.length > 1">
+                            <tr style="font-weight: 600; background: rgba(255,255,255,0.03);">
+                                <td class="ps-4">Total</td>
+                                <td class="text-center font-monospace">{{ formatNumber(summary.total_transactions) }}</td>
+                                <td class="text-end font-monospace">{{ formatCurrency(summary.total_billiard) }}</td>
+                                <td class="text-end font-monospace">{{ formatCurrency(summary.total_fnb) }}</td>
+                                <td class="text-end font-monospace">{{ formatCurrency(summary.total_revenue) }}</td>
+                                <td class="text-center pe-4">{{ formatDuration(summary.avg_duration) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div v-else class="text-center py-5" style="opacity: 0.4;">
+                    <i class="bi bi-calendar-event d-block mb-2" style="font-size: 2rem;"></i>
+                    Tidak ada data tren harian untuk periode ini
+                </div>
+            </div>
+        </div>
+
     </AuthenticatedLayout>
 </template>
 
 <style scoped>
-.stat-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-}
-.stat-icon {
-    width: 48px;
-    height: 48px;
+.analytics-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
 }
-.progress {
-    background-color: rgba(0,0,0,0.05);
+.analytics-bar-track {
+    width: 60px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden;
 }
-.table td, .table th {
-    vertical-align: middle;
+.analytics-bar {
+    height: 100%;
+    border-radius: 3px;
+    background: #6366f1;
+    transition: width 0.3s ease;
 }
 </style>

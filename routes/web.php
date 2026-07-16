@@ -51,7 +51,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         Route::get('/master/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/master/users', [UserController::class, 'store'])->name('users.store');
-        Route::put('/master/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::post('/master/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/master/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/master/reports/fnb-sales', [ReportController::class, 'fnbSales'])->name('reports.fnb-sales');

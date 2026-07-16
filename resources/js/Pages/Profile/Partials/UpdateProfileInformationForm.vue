@@ -33,6 +33,7 @@ const submit = () => {
     form.transform(() => ({
         name: form.name,
         ...(form.photo ? { photo: form.photo } : {}),
+        _method: 'patch',
     })).post(route('profile.update'), {
         forceFormData: true,
         preserveScroll: true,

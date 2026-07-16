@@ -30,6 +30,7 @@ const roleOptions = [
 ];
 
 const form = useForm({
+    _method: 'post',
     name: '',
     username: '',
     role: 'kasir',
@@ -73,6 +74,7 @@ const capitalizeName = () => {
 const editUser = (user) => {
     isEditing.value = true;
     editId.value = user.id;
+    form._method = 'put';
     form.name = user.name;
     form.username = user.username;
     form.role = user.role;
@@ -93,21 +95,25 @@ const submit = () => {
         return;
     }
 
+    const formData = new FormData();
+    // No _method override because route is actually POST in web.php
+    formData.append('name', form.name);
+    formData.append('username', form.username);
+    formData.append('role', form.role);
+    formData.append('is_active', form.is_active ? '1' : '0');
+    if (form.password) formData.append('password', form.password);
+    if (form.photo instanceof File) formData.append('photo', form.photo);
+
     if (isEditing.value) {
-        form.transform(() => ({
-            ...form,
-            is_active: form.is_active ? '1' : '0',
-        })).put(route('users.update', editId.value), {
-            forceFormData: true,
+        // We removed the inner formData.append('_method') from here as it's set above
+        router.post(route('users.update', editId.value), formData, {
             onSuccess: () => closeModal(),
+            forceFormData: true
         });
     } else {
-        form.transform(() => ({
-            ...form,
-            is_active: form.is_active ? '1' : '0',
-        })).post(route('users.store'), {
-            forceFormData: true,
+        router.post(route('users.store'), formData, {
             onSuccess: () => closeModal(),
+            forceFormData: true
         });
     }
 };

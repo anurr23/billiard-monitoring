@@ -49,13 +49,19 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        // Debugging
+        // \Log::info('Update User Data:', $request->all());
+        // \Log::info('Has File:', ['has_file' => $request->hasFile('photo')]);
+        
+        $photo = $request->file('photo');
+        
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'username' => ['required', 'string', 'max:255', Rule::unique('users')->ignore($user->id)],
             'role' => ['required', Rule::in(['admin', 'kasir'])],
             'is_active' => 'sometimes|boolean',
             'password' => 'nullable|string|min:4',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048'
+            'photo' => 'nullable|image|max:2048',
         ]);
 
         if ($request->hasFile('photo')) {

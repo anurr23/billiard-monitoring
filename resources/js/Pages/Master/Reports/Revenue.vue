@@ -2,8 +2,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
-import { VueDatePicker } from '@vuepic/vue-datepicker';
-import '@vuepic/vue-datepicker/dist/main.css';
+import flatPickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
 
 const props = defineProps({
     dailyRevenue: Array,
@@ -12,22 +12,11 @@ const props = defineProps({
     endDate: String,
 });
 
-const toDatePickerDate = (str) => {
-    if (!str) return null;
-    const [y, m, d] = str.split('-').map(Number);
-    return new Date(y, m - 1, d);
-};
+const fpConfig = { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd M Y' };
+const toYMD = (d) => d.toISOString().slice(0, 10);
 
-const toDateString = (date) => {
-    if (!date) return '';
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-};
-
-const startDate = ref(toDatePickerDate(props.startDate));
-const endDate = ref(toDatePickerDate(props.endDate));
+const startDate = ref(props.startDate || '');
+const endDate = ref(props.endDate || '');
 const activePreset = ref(null);
 
 const presets = [
@@ -40,8 +29,8 @@ const presets = [
 const applyFilter = () => {
     activePreset.value = null;
     router.get(route('reports.revenue'), {
-        start_date: toDateString(startDate.value),
-        end_date: toDateString(endDate.value),
+        start_date: startDate.value,
+        end_date: endDate.value,
     }, { preserveState: true });
 };
 
@@ -59,8 +48,8 @@ const setPreset = (preset) => {
         start.setDate(start.getDate() - preset.days);
     }
 
-    startDate.value = start;
-    endDate.value = end;
+    startDate.value = toYMD(start);
+    endDate.value = toYMD(end);
     applyFilter();
 };
 
@@ -79,7 +68,7 @@ const formatDateShort = (dateStr) => {
 
 const displayRange = computed(() => {
     if (!startDate.value || !endDate.value) return '';
-    return `${formatDateShort(toDateString(startDate.value))} — ${formatDateShort(toDateString(endDate.value))}`;
+    return `${formatDateShort(startDate.value)} — ${formatDateShort(endDate.value)}`;
 });
 </script>
 
@@ -115,13 +104,10 @@ const displayRange = computed(() => {
                         <label class="bb-label">
                             <i class="bi bi-calendar3 me-1"></i> Dari Tanggal
                         </label>
-                        <VueDatePicker
+                        <flat-pickr
                             v-model="startDate"
-                            format="dd MMM yyyy"
-                            :enable-time-picker="false"
-                            auto-apply
-                            position="left"
-                            :teleport="true"
+                            :config="fpConfig"
+                            class="form-control"
                             placeholder="Pilih tanggal"
                         />
                     </div>
@@ -129,13 +115,10 @@ const displayRange = computed(() => {
                         <label class="bb-label">
                             <i class="bi bi-calendar3 me-1"></i> Sampai Tanggal
                         </label>
-                        <VueDatePicker
+                        <flat-pickr
                             v-model="endDate"
-                            format="dd MMM yyyy"
-                            :enable-time-picker="false"
-                            auto-apply
-                            position="left"
-                            :teleport="true"
+                            :config="fpConfig"
+                            class="form-control"
                             placeholder="Pilih tanggal"
                         />
                     </div>
