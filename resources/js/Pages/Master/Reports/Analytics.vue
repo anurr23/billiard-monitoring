@@ -251,6 +251,35 @@ const maxTableTx = computed(() => {
             </div>
         </div>
 
+        <!-- Daily Revenue Chart (Pure CSS Flexbox) -->
+        <div class="bb-card mb-4" v-if="dailyStats.length > 1">
+            <div class="bb-card-header">
+                <h6 class="fw-bold mb-0"><i class="bi bi-graph-up text-primary me-2"></i>Tren Pendapatan Harian</h6>
+            </div>
+            <div class="bb-card-body">
+                <div class="d-flex align-items-end justify-content-between pt-4" style="height: 200px; gap: 4px; padding-bottom: 25px; position: relative;">
+                    <!-- Y-axis rough guides -->
+                    <div class="position-absolute w-100" style="bottom: 25px; border-top: 1px dashed rgba(255,255,255,0.05); z-index: 1;"></div>
+                    <div class="position-absolute w-100" style="bottom: 50%; border-top: 1px dashed rgba(255,255,255,0.05); z-index: 1;"></div>
+                    <div class="position-absolute w-100" style="top: 20px; border-top: 1px dashed rgba(255,255,255,0.05); z-index: 1;"></div>
+                    
+                    <div v-for="d in [...dailyStats].reverse()" :key="d.date" class="d-flex flex-column align-items-center justify-content-end h-100 w-100" style="z-index: 2; group">
+                        <!-- Bar -->
+                        <div class="bb-chart-bar" 
+                             :style="{ 
+                                 height: Math.max((d.revenue / Math.max(...dailyStats.map(ds => ds.revenue), 1)) * 100, 2) + '%',
+                             }"
+                             :title="formatDateShort(d.date) + ' - ' + formatCurrency(d.revenue)"
+                        ></div>
+                        <!-- X-axis label (date) -->
+                        <div class="position-absolute" style="bottom: 0; font-size: 0.6rem; color: #6c757d; white-space: nowrap; transform: rotate(-45deg); transform-origin: top left; margin-top: 5px;">
+                            {{ formatDateShort(d.date) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Insight Cards -->
         <div class="row g-3 mb-4" v-if="peakHour || topTable || topPackage">
             <div class="col-md-4" v-if="peakHour">
@@ -503,6 +532,20 @@ const maxTableTx = computed(() => {
 </template>
 
 <style scoped>
+.bb-chart-bar {
+    width: 100%;
+    max-width: 30px;
+    background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 100%);
+    border-radius: 4px 4px 0 0;
+    transition: height 0.3s ease, opacity 0.2s ease;
+    opacity: 0.85;
+    cursor: pointer;
+}
+.bb-chart-bar:hover {
+    opacity: 1;
+    background: linear-gradient(180deg, #a78bfa 0%, #818cf8 100%);
+}
+
 .analytics-icon {
     width: 44px;
     height: 44px;

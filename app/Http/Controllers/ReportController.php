@@ -166,16 +166,30 @@ class ReportController extends Controller
             ];
         })->sortByDesc('revenue')->values();
 
-        $dailyStats = $completedTransactions->groupBy(fn($t) => $t->created_at->format('Y-m-d'))->map(function ($group, $date) {
-            return [
-                'date' => $date,
+        // Group transactions by date
+        $dailyTransactions = $completedTransactions->groupBy(fn($t) => $t->created_at->format('Y-m-d'));
+        
+        // Ensure all dates in range are represented, even if 0
+        $dailyStatsList = collect();
+        $currentDate = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        
+        while ($currentDate <= $end) {
+            $dateStr = $currentDate->format('Y-m-d');
+            $group = $dailyTransactions->get($dateStr, collect());
+            
+            $dailyStatsList->push([
+                'date' => $dateStr,
                 'transactions' => $group->count(),
                 'revenue' => $group->sum('total_cost'),
                 'billiard_revenue' => $group->sum('billiard_cost'),
                 'fnb_revenue' => $group->sum('fnb_cost'),
                 'avg_duration' => round($group->avg(fn($t) => $t->ended_at ? $t->created_at->diffInMinutes($t->ended_at) : 0) ?? 0),
-            ];
-        })->sortKeysDesc()->values();
+            ]);
+            
+            $currentDate->addDay();
+        }
+        $dailyStats = $dailyStatsList->values();
 
         $summary = [
             'total_transactions' => $completedTransactions->count(),
