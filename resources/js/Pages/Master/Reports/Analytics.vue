@@ -318,7 +318,7 @@ const chartOptions = {
         </div>
 
         <!-- Daily Revenue Chart (Chart.js) -->
-        <div class="bb-card mb-4" v-if="dailyStats.length > 1">
+        <div class="bb-card mb-4" v-if="dailyStats && dailyStats.length > 0">
             <div class="bb-card-header">
                 <h6 class="fw-bold mb-0"><i class="bi bi-graph-up text-primary me-2"></i>Tren Pendapatan Harian</h6>
             </div>
