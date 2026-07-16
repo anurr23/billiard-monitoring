@@ -203,7 +203,7 @@ onUnmounted(() => {
 // ─── Session Detail Modal (replaces old checkout modal) ──
 const showSessionModal = ref(false);
 const selectedActiveTable = ref(null);
-const sessionTab = ref('fnb'); // 'fnb' | 'orders' | 'checkout' | 'edit'
+const sessionTab = ref('edit'); // 'checkout' | 'edit'
 const fnbSearch = ref('');
 const fnbCategoryFilter = ref('all');
 
@@ -220,7 +220,7 @@ const activeTransaction = computed(() => {
 
 const openSessionModal = (table) => {
     selectedActiveTable.value = table;
-    sessionTab.value = 'fnb';
+    sessionTab.value = 'edit';
     fnbSearch.value = '';
     fnbCategoryFilter.value = 'all';
     showSessionModal.value = true;
@@ -249,10 +249,10 @@ const closeSessionModal = () => {
 
 const submitEditSession = () => {
     if (!selectedActiveTable.value || !activeTransaction.value) return;
-    editSessionForm.put(route('tables.updateSession', [selectedActiveTable.value.id, activeTransaction.value.id]), {
+        editSessionForm.put(route('tables.updateSession', [selectedActiveTable.value.id, activeTransaction.value.id]), {
         preserveScroll: true,
         onSuccess: () => {
-            sessionTab.value = 'orders';
+            closeSessionModal();
         }
     });
 };
@@ -715,7 +715,7 @@ const printReceipt = (transaction) => {
                                         </div>
                                     </div>
                                     <div class="d-flex gap-1" style="z-index: 2; position: relative;">
-                                        <button v-if="tx.status === 'active'" @click.stop="showTableHistoryModal = false; openSessionModal(selectedTableForHistory); setTimeout(() => sessionTab = 'edit', 50);" class="bb-btn bb-btn--ghost bb-btn--sm text-primary" title="Edit Sesi">
+                                        <button v-if="tx.status === 'active'" @click.stop="showTableHistoryModal = false; openSessionModal(selectedTableForHistory);" class="bb-btn bb-btn--ghost bb-btn--sm text-primary" title="Edit Sesi">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
                                         <button @click.stop="printReceipt({...tx, table_name: selectedTableForHistory.name})" class="bb-btn bb-btn--ghost bb-btn--sm" title="Cetak Struk">
@@ -1115,7 +1115,7 @@ const printReceipt = (transaction) => {
                                     </div>
 
                                     <div class="d-flex gap-2 mt-4">
-                                        <button type="button" @click="sessionTab = 'checkout'" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
+                                        <button type="button" @click="closeSessionModal" class="bb-btn bb-btn--ghost flex-grow-1 py-3">
                                             Batal
                                         </button>
                                         <button type="submit" :disabled="editSessionForm.processing || !editSessionForm.package_id" class="bb-btn bb-btn--primary flex-grow-1 py-3">
