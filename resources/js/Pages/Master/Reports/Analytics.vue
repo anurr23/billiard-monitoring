@@ -204,22 +204,22 @@ const chartOptions = {
                         <label class="bb-label">
                             <i class="bi bi-calendar3 me-1"></i> Dari Tanggal
                         </label>
-                        <flat-pickr
+                        <Flatpickr
                             v-model="startDate"
                             :config="fpConfig"
                             class="form-control"
-                            placeholder="Pilih tanggal"
+                            placeholder="Pilih Tanggal"
                         />
                     </div>
                     <div class="col-md-4">
                         <label class="bb-label">
                             <i class="bi bi-calendar3 me-1"></i> Sampai Tanggal
                         </label>
-                        <flat-pickr
+                        <Flatpickr
                             v-model="endDate"
                             :config="fpConfig"
                             class="form-control"
-                            placeholder="Pilih tanggal"
+                            placeholder="Pilih Tanggal"
                         />
                     </div>
                     <div class="col-md-4 d-flex gap-2">
