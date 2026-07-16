@@ -69,13 +69,19 @@ const openOrderModal = (table) => {
 
 const closeOrderModal = () => {
     showOrderModal.value = false;
-    selectedTable.value = null;
-    form.reset();
     
     // Return to history modal if it was opened from there
-    if (selectedTableForHistory.value) {
+    if (selectedTableForHistory.value && selectedTable.value) {
+        // PERBAIKAN: Cari referensi meja yang terbaru dari props.tables agar history ter-update
+        const updatedTable = props.tables.find(t => t.id === selectedTable.value.id);
+        if (updatedTable) {
+            selectedTableForHistory.value = updatedTable;
+        }
         showTableHistoryModal.value = true;
     }
+    
+    selectedTable.value = null;
+    form.reset();
 };
 
 const submitOrder = () => {
@@ -264,13 +270,19 @@ const openSessionModal = (table) => {
 
 const closeSessionModal = () => {
     showSessionModal.value = false;
-    selectedActiveTable.value = null;
-    editSessionForm.reset();
     
     // Return to history modal if it was opened from there
-    if (selectedTableForHistory.value) {
+    if (selectedTableForHistory.value && selectedActiveTable.value) {
+        // PERBAIKAN: Cari referensi meja yang terbaru dari props.tables
+        const updatedTable = props.tables.find(t => t.id === selectedActiveTable.value.id);
+        if (updatedTable) {
+            selectedTableForHistory.value = updatedTable;
+        }
         showTableHistoryModal.value = true;
     }
+    
+    selectedActiveTable.value = null;
+    editSessionForm.reset();
 };
 
 const submitEditSession = () => {
