@@ -659,11 +659,6 @@ const printReceipt = (transaction) => {
                         </div>
                         
                         <div v-if="selectedTableForHistory.status === 'active'">
-                            <div class="d-flex gap-2">
-                                <button @click="showTableHistoryModal = false; openSessionModal(selectedTableForHistory)" class="bb-btn bb-btn--success bb-btn--sm">
-                                    <i class="bi bi-box-arrow-in-right me-1"></i> Buka Sesi Aktif
-                                </button>
-                            </div>
                         </div>
                         <div v-else>
                             <button @click="showTableHistoryModal = false; openOrderModal(selectedTableForHistory)" class="bb-btn bb-btn--primary bb-btn--sm">
