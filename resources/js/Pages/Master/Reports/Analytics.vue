@@ -2,8 +2,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
-import flatPickr from 'vue-flatpickr-component';
+import Flatpickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
+import { Bar } from 'vue-chartjs'
+import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const props = defineProps({
     hourlyStats: Array,
@@ -104,6 +108,68 @@ const totalHourlyTx = computed(() => {
 const maxTableTx = computed(() => {
     return Math.max(...(props.tableUtilization?.map(t => t.transactions) || [1]), 1);
 });
+
+// Flip array back for chart so it reads left-to-right (oldest to newest)
+const reversedDailyStats = computed(() => {
+    return [...props.dailyStats].reverse();
+});
+
+const chartData = computed(() => {
+    return {
+        labels: reversedDailyStats.value.map(d => formatDateShort(d.date)),
+        datasets: [
+            {
+                label: 'Pendapatan',
+                backgroundColor: '#8b5cf6',
+                data: reversedDailyStats.value.map(d => d.revenue),
+                borderRadius: 4
+            }
+        ]
+    }
+});
+
+const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+        y: {
+            beginAtZero: true,
+            ticks: {
+                callback: function(value) {
+                    return 'Rp ' + (value / 1000).toLocaleString('id-ID') + 'k';
+                }
+            },
+            grid: {
+                color: 'rgba(255, 255, 255, 0.05)'
+            }
+        },
+        x: {
+            grid: {
+                display: false
+            }
+        }
+    },
+    plugins: {
+        legend: {
+            display: false
+        },
+        tooltip: {
+            callbacks: {
+                label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                        label += ': ';
+                    }
+                    if (context.parsed.y !== null) {
+                        label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(context.parsed.y);
+                    }
+                    return label;
+                }
+            }
+        }
+    }
+};
+
 </script>
 
 <template>
@@ -251,31 +317,14 @@ const maxTableTx = computed(() => {
             </div>
         </div>
 
-        <!-- Daily Revenue Chart (Pure CSS Flexbox) -->
+        <!-- Daily Revenue Chart (Chart.js) -->
         <div class="bb-card mb-4" v-if="dailyStats.length > 1">
             <div class="bb-card-header">
                 <h6 class="fw-bold mb-0"><i class="bi bi-graph-up text-primary me-2"></i>Tren Pendapatan Harian</h6>
             </div>
             <div class="bb-card-body">
-                <div class="d-flex align-items-end justify-content-between pt-4" style="height: 200px; gap: 4px; padding-bottom: 25px; position: relative;">
-                    <!-- Y-axis rough guides -->
-                    <div class="position-absolute w-100" style="bottom: 25px; border-top: 1px dashed rgba(255,255,255,0.05); z-index: 1;"></div>
-                    <div class="position-absolute w-100" style="bottom: 50%; border-top: 1px dashed rgba(255,255,255,0.05); z-index: 1;"></div>
-                    <div class="position-absolute w-100" style="top: 20px; border-top: 1px dashed rgba(255,255,255,0.05); z-index: 1;"></div>
-                    
-                    <div v-for="d in [...dailyStats].reverse()" :key="d.date" class="d-flex flex-column align-items-center justify-content-end h-100 w-100" style="z-index: 2; group">
-                        <!-- Bar -->
-                        <div class="bb-chart-bar" 
-                             :style="{ 
-                                 height: Math.max((d.revenue / Math.max(...dailyStats.map(ds => ds.revenue), 1)) * 100, 2) + '%',
-                             }"
-                             :title="formatDateShort(d.date) + ' - ' + formatCurrency(d.revenue)"
-                        ></div>
-                        <!-- X-axis label (date) -->
-                        <div class="position-absolute" style="bottom: 0; font-size: 0.6rem; color: #6c757d; white-space: nowrap; transform: rotate(-45deg); transform-origin: top left; margin-top: 5px;">
-                            {{ formatDateShort(d.date) }}
-                        </div>
-                    </div>
+                <div style="height: 300px; width: 100%;">
+                    <Bar :data="chartData" :options="chartOptions" />
                 </div>
             </div>
         </div>
@@ -532,20 +581,6 @@ const maxTableTx = computed(() => {
 </template>
 
 <style scoped>
-.bb-chart-bar {
-    width: 100%;
-    max-width: 30px;
-    background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 100%);
-    border-radius: 4px 4px 0 0;
-    transition: height 0.3s ease, opacity 0.2s ease;
-    opacity: 0.85;
-    cursor: pointer;
-}
-.bb-chart-bar:hover {
-    opacity: 1;
-    background: linear-gradient(180deg, #a78bfa 0%, #818cf8 100%);
-}
-
 .analytics-icon {
     width: 44px;
     height: 44px;
