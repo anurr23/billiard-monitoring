@@ -209,7 +209,8 @@ const fnbCategoryFilter = ref('all');
 
 const editSessionForm = useForm({
     package_id: '',
-    duration_hours: 1
+    duration_hours: 1,
+    items: [],
 });
 
 // Get active transaction for the selected table
@@ -233,6 +234,16 @@ const openSessionModal = (table) => {
         const end = new Date(tx.expected_end_time);
         const diffHours = (end - start) / (1000 * 60 * 60);
         editSessionForm.duration_hours = Math.max(0.5, Math.round(diffHours * 2) / 2); // default or nearest 0.5
+        
+        // Populate items
+        editSessionForm.items = tx.items.map(i => ({
+            id: i.id, // existing item ID
+            fnb_item_id: i.fnb_item_id,
+            name: i.fnb_item?.name,
+            price: i.price,
+            quantity: i.quantity,
+            is_new: false
+        }));
     }
 };
 
@@ -278,41 +289,44 @@ const filteredFnbItems = computed(() => {
     return items;
 });
 
-// Add F&B item to transaction
-const addFnbItem = (fnbItemId, transactionId) => {
-    router.post(route('transaction-items.store', transactionId), {
-        fnb_item_id: fnbItemId,
-        quantity: 1,
-    }, {
-        preserveScroll: true,
-        preserveState: false,
-    });
+// Add F&B item to edit form state
+const addFnbItemToEditForm = (item) => {
+    const existing = editSessionForm.items.find(i => i.fnb_item_id === item.id);
+    if (existing) {
+        existing.quantity++;
+    } else {
+        editSessionForm.items.push({
+            fnb_item_id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: 1,
+            is_new: true
+        });
+    }
 };
 
-// Increment item quantity
+const incrementEditItem = (index) => {
+    editSessionForm.items[index].quantity++;
+};
+
+const decrementEditItem = (index) => {
+    if (editSessionForm.items[index].quantity > 1) {
+        editSessionForm.items[index].quantity--;
+    } else if (editSessionForm.items[index].is_new) {
+        editSessionForm.items.splice(index, 1);
+    }
+};
+
 const incrementItem = (itemId) => {
-    router.patch(route('transaction-items.add', itemId), { change: 1 }, {
-        preserveScroll: true,
-        preserveState: false,
-    });
+// obsolete functions removed
 };
 
 const decrementItem = (itemId) => {
-    router.patch(route('transaction-items.add', itemId), { change: -1 }, {
-        preserveScroll: true,
-        preserveState: false,
-    });
+// obsolete functions removed
 };
 
 const updateItemQuantity = (itemId, newQty, currentQty) => {
-    if (newQty === currentQty) return;
-    const diff = newQty - currentQty;
-    if (diff === 0) return;
-    
-    router.patch(route('transaction-items.add', itemId), { change: diff }, {
-        preserveScroll: true,
-        preserveState: false,
-    });
+// obsolete functions removed
 };
 
 // Get item count for badge
@@ -1053,7 +1067,7 @@ const printReceipt = (transaction) => {
             
                                     <!-- Menu Grid -->
                                     <div v-if="filteredFnbItems.length > 0" class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); max-height: 380px; overflow-y: auto; padding-right: 5px;">
-                                        <div v-for="item in filteredFnbItems" :key="item.id" class="bb-table-card p-0 overflow-hidden d-flex flex-column" style="border-radius: 0.75rem; cursor: pointer;" @click="addFnbItem(item.id, activeTransaction.id)">
+                                        <div v-for="item in filteredFnbItems" :key="item.id" class="bb-table-card p-0 overflow-hidden d-flex flex-column" style="border-radius: 0.75rem; cursor: pointer;" @click="addFnbItemToEditForm(item)">
                                             <!-- Image -->
                                             <div v-if="item.image_url" style="height: 80px; overflow: hidden;">
                                                 <img :src="item.image_url" :alt="item.name" class="w-100 h-100" style="object-fit: cover;" />
@@ -1108,31 +1122,30 @@ const printReceipt = (transaction) => {
                                         </div>
                                     </div>
 
-                                    <div v-if="activeTransaction?.items?.length > 0" class="mb-3">
+                                    <div v-if="editSessionForm.items?.length > 0" class="mb-3">
                                         <h6 class="fw-bold mb-2 small d-flex justify-content-between align-items-center">
                                             Keranjang F&B 
-                                            <span class="badge rounded-pill px-2 py-1" style="background: rgba(16,185,129,0.15); color: #10b981; font-size: 0.7rem;">{{ activeTransaction.items.length }}</span>
+                                            <span class="badge rounded-pill px-2 py-1" style="background: rgba(16,185,129,0.15); color: #10b981; font-size: 0.7rem;">{{ editSessionForm.items.length }}</span>
                                         </h6>
                                         <div class="d-flex flex-column gap-2" style="max-height: 150px; overflow-y: auto;">
-                                            <div v-for="item in activeTransaction.items" :key="item.id" class="p-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                                            <div v-for="(item, index) in editSessionForm.items" :key="index" class="p-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
                                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <span class="fw-bold small">{{ item.fnb_item?.name }}</span>
-                                                    <span class="fw-bold small" style="color: #10b981;">{{ formatRupiah(item.subtotal) }}</span>
+                                                    <span class="fw-bold small">{{ item.name }}</span>
+                                                    <span class="fw-bold small" style="color: #10b981;">{{ formatRupiah(item.price * item.quantity) }}</span>
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <span class="text-secondary small">{{ formatRupiah(item.price) }}</span>
                                                     <div class="d-flex align-items-center gap-1">
-                                                        <button type="button" @click="decrementItem(item.id)" class="bb-btn bb-btn--ghost px-2 py-0 text-secondary" style="font-size: 0.75rem;">
+                                                        <button type="button" @click="decrementEditItem(index)" class="bb-btn bb-btn--ghost px-2 py-0 text-secondary" style="font-size: 0.75rem;">
                                                             <i class="bi bi-dash-lg"></i>
                                                         </button>
                                                         <input type="number" 
-                                                            :value="item.quantity" 
-                                                            @change="updateItemQuantity(item.id, Number($event.target.value), item.quantity)" 
+                                                            v-model="item.quantity" 
                                                             min="0" 
                                                             class="bb-input py-0 px-1 text-center" 
                                                             style="width: 50px; height: 26px; font-size: 0.75rem; border: none; background: rgba(255,255,255,0.05);" 
                                                         />
-                                                        <button type="button" @click="incrementItem(item.id)" class="bb-btn bb-btn--ghost px-2 py-0 text-warning" style="font-size: 0.75rem;">
+                                                        <button type="button" @click="incrementEditItem(index)" class="bb-btn bb-btn--ghost px-2 py-0 text-warning" style="font-size: 0.75rem;">
                                                             <i class="bi bi-plus-lg"></i>
                                                         </button>
                                                     </div>

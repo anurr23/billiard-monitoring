@@ -136,6 +136,9 @@ class TableController extends Controller
         $request->validate([
             'package_id' => 'required|exists:packages,id',
             'duration_hours' => 'required|numeric|min:0.5',
+            'items' => 'nullable|array',
+            'items.*.fnb_item_id' => 'required|exists:fnb_items,id',
+            'items.*.quantity' => 'required|integer|min:0',
         ]);
 
         $transaction = Transaction::where('id', $transaction_id)
@@ -155,7 +158,38 @@ class TableController extends Controller
             
             $transaction->expected_end_time = $newExpectedEndTime;
 
-            // Recalculate billiard cost
+            // Handle items update
+            if ($request->has('items') && is_array($request->items)) {
+                // Delete items that have quantity 0 or were removed
+                $receivedItemIds = collect($request->items)->pluck('fnb_item_id')->toArray();
+                $transaction->items()->whereNotIn('fnb_item_id', $receivedItemIds)->delete();
+                $transaction->items()->where('quantity', '<=', 0)->delete();
+
+                $fnbCost = 0;
+                foreach ($request->items as $item) {
+                    if ($item['quantity'] <= 0) continue;
+                    
+                    $fnbItem = \App\Models\FnbItem::find($item['fnb_item_id']);
+                    if (!$fnbItem) continue;
+
+                    $subtotal = $fnbItem->price * $item['quantity'];
+                    $transaction->items()->updateOrCreate(
+                        ['fnb_item_id' => $fnbItem->id],
+                        [
+                            'price' => $fnbItem->price,
+                            'quantity' => $item['quantity'],
+                            'subtotal' => $subtotal,
+                        ]
+                    );
+                    $fnbCost += $subtotal;
+                }
+                $transaction->fnb_cost = $fnbCost;
+            } else {
+                $transaction->items()->delete();
+                $transaction->fnb_cost = 0;
+            }
+
+            // Recalculate costs
             $transaction->billiard_cost = $package->price * $request->duration_hours;
             $transaction->total_cost = $transaction->billiard_cost + $transaction->fnb_cost;
             
