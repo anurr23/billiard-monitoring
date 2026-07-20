@@ -15,6 +15,11 @@ class ReportController extends Controller
 {
     public function fnbSales(Request $request)
     {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
         $startDate = $request->input('start_date', now()->toDateString());
         $endDate = $request->input('end_date', now()->toDateString());
 
@@ -51,6 +56,11 @@ class ReportController extends Controller
 
     public function tableTransactions(Request $request)
     {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
         $startDate = $request->input('start_date', now()->toDateString());
         $endDate = $request->input('end_date', now()->toDateString());
 
@@ -82,6 +92,11 @@ class ReportController extends Controller
 
     public function revenue(Request $request)
     {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
         $startDate = $request->input('start_date', now()->toDateString());
         $endDate = $request->input('end_date', now()->toDateString());
 
@@ -118,6 +133,11 @@ class ReportController extends Controller
 
     public function analytics(Request $request)
     {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
         // For the graph to be meaningful when filtering by 'Hari Ini' (today),
         // we default to fetching the current month's data if no dates are provided.
         $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
@@ -130,7 +150,7 @@ class ReportController extends Controller
         $hourlyStats = $completedTransactions->groupBy(fn($t) => $t->created_at->format('H'))->map(function ($group) {
             $count = $group->count();
             $revenue = $group->sum('total_cost');
-            $avgDuration = $group->avg(fn($t) => $t->ended_at ? $t->created_at->diffInMinutes($t->ended_at) : 0);
+            $avgDuration = $group->avg(fn($t) => $t->end_time ? $t->created_at->diffInMinutes($t->end_time) : 0);
             return [
                 'hour' => $group->first()->created_at->format('H:00'),
                 'transactions' => $count,
@@ -144,7 +164,7 @@ class ReportController extends Controller
               ->whereBetween(DB::raw("date(created_at)"), [$startDate, $endDate]);
         }])->get()->map(function ($table) {
             $txns = $table->transactions;
-            $totalMinutes = $txns->sum(fn($t) => $t->ended_at ? $t->created_at->diffInMinutes($t->ended_at) : 0);
+            $totalMinutes = $txns->sum(fn($t) => $t->end_time ? $t->created_at->diffInMinutes($t->end_time) : 0);
             $totalHours = round($totalMinutes / 60, 1);
             return [
                 'table_number' => $table->table_number,
@@ -165,7 +185,7 @@ class ReportController extends Controller
                 'price_per_hour' => $pkg->price_per_hour,
                 'transactions' => $txns->count(),
                 'revenue' => $txns->sum('billiard_cost'),
-                'total_hours' => round($txns->sum(fn($t) => $t->ended_at ? $t->created_at->diffInMinutes($t->ended_at) : 0) / 60, 1),
+                'total_hours' => round($txns->sum(fn($t) => $t->end_time ? $t->created_at->diffInMinutes($t->end_time) : 0) / 60, 1),
             ];
         })->sortByDesc('revenue')->values();
 
@@ -187,7 +207,7 @@ class ReportController extends Controller
                 'revenue' => $group->sum('total_cost'),
                 'billiard_revenue' => $group->sum('billiard_cost'),
                 'fnb_revenue' => $group->sum('fnb_cost'),
-                'avg_duration' => round($group->avg(fn($t) => $t->ended_at ? $t->created_at->diffInMinutes($t->ended_at) : 0) ?? 0),
+                'avg_duration' => round($group->avg(fn($t) => $t->end_time ? $t->created_at->diffInMinutes($t->end_time) : 0) ?? 0),
             ]);
             
             $currentDate->addDay();
@@ -200,7 +220,7 @@ class ReportController extends Controller
             'total_billiard' => $completedTransactions->sum('billiard_cost'),
             'total_fnb' => $completedTransactions->sum('fnb_cost'),
             'avg_transaction_value' => $completedTransactions->avg('total_cost') ?? 0,
-            'avg_duration' => round($completedTransactions->avg(fn($t) => $t->ended_at ? $t->created_at->diffInMinutes($t->ended_at) : 0) ?? 0),
+            'avg_duration' => round($completedTransactions->avg(fn($t) => $t->end_time ? $t->created_at->diffInMinutes($t->end_time) : 0) ?? 0),
             'unique_tables_used' => $completedTransactions->pluck('table_id')->filter()->unique()->count(),
         ];
 
