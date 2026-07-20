@@ -25,17 +25,15 @@ Laravel 13 + Inertia.js + Vue 3 + Bootstrap 5. SQLite in test/dev, PostgreSQL in
 
 - **Roles:** `admin` (full access), `kasir` (dashboard only). Enforced by `CheckRole` middleware.
 - **UUIDs:** `User` and `Table` use `HasUuids`. `Transaction`, `TransactionItem`, `Package`, `FnbItem` use auto-increment.
-- **Transactions:** status `active|completed|cancelled`, type `billiard` (table session) or `fnb_only` (standalone F&B). `table_id` nullable for F&B-only. Cost fields (`billiard_cost`, `fnb_cost`, `total_cost`) recalculated inline in multiple controllers (no shared service).
+- **Transactions:** status `active|completed|cancelled`, type `billiard` (table session) or `fnb_only` (standalone F&B). `table_id` nullable for F&B-only. Cost fields (`billiard_cost`, `fnb_cost`, `total_cost`) recalculated via `TransactionService::recalculate()`.
 - **Auth:** username-based (no email column). `password_reset_tokens` keys on `username`. Login via `username` field.
 - **User model:** `photo_path` + `photo_url` accessor, `is_active` boolean, `role` enum, PHP attribute `#[Fillable]`/`#[Hidden]`.
 
-## Tests (WARNING: mostly stale Breeze scaffolding)
+## Tests
 
-- Only `UserFactory` exists. No factories for `Table`, `Transaction`, `Package`, `FnbItem`.
-- Profile tests reference `email`/`email_verified_at`/self-delete -- **none exist in the real app**.
-- Auth tests POST `email` field -- real app uses `username`. These tests would fail.
-- Email verification tests test a feature that doesn't exist.
-- **Zero coverage** of any domain logic (tables, transactions, F&B, packages, roles, relay control, auto-checkout).
+- All models (`User`, `Table`, `Package`, `FnbItem`, `Transaction`, `TransactionItem`) have Laravel model factories.
+- Stale Breeze tests (email verification, registration, self-deletion, email-based auth) have been cleaned up and adapted to username-based auth.
+- Core business logic tested via `TransactionServiceTest` (verifies recalculation).
 
 ## Conventions & Gotchas
 
@@ -44,11 +42,22 @@ Laravel 13 + Inertia.js + Vue 3 + Bootstrap 5. SQLite in test/dev, PostgreSQL in
 - **Dark-by-default** theme via `data-bs-theme` on `<html>`, persisted to `localStorage('theme')`.
 - **UI strings in Indonesian** (`"Meja berhasil ditambahkan"`), code in English.
 - **File uploads:** user photos -> `storage/app/public/user_photos/`, F&B images -> `fnb_images/`. Always use `FormData` + `forceFormData: true`. Client-side image compression in FnbItems.vue (800px max, 85%).
-- **Cost recalculation** is duplicated across `TableController`, `TransactionItemController`, `FnbOrderController` -- no shared helper.
 - **Name auto-capitalization**: `.replace(/\b\w/g, l => l.toUpperCase())` used in multiple forms.
-- **Receipt printing:** inline HTML in `window.open()` with 80mm thermal receipt CSS.
-- **Inconsistencies:** User update uses `POST` (not PUT/PATCH). Two PATCH routes to `updateQuantity`. `ConfirmablePasswordController` references `$request->user()->email` (property doesn't exist). `Table` model has dead casts for columns dropped in migration.
+- **Receipt printing:** custom `printReceipt` utility (`resources/js/utils/receipt.js`) utilizing 80mm thermal receipt HTML/CSS template loaded in `window.open()`.
+- **Inconsistencies:** Two PATCH routes to `updateQuantity`.
 - **Vite base path:** `/poolstream/public/build/` (not default). SCSS deprecation warnings silenced in config.
 - **4-space indent, LF line endings** (`.editorconfig`).
 - **No pagination** in backend queries (all `->get()`).
-- **`FnbItem` model lacks `HasFactory`** trait (unlike other models).
+
+## Future Plans / Roadmap
+
+1. **Real Hardware Integration (Relay Biliar)**
+   - Replace dummy script `relay_controller.py` with actual USB HID Relay integration using python `hidapi` library to toggle lights automatically on session start/stop.
+2. **Real-Time Dashboard (WebSockets / Server-Sent Events)**
+   - Integrate SSE or Laravel Reverb for real-time countdown of billiard sessions and auto-deactivation alerts without page refreshes.
+3. **Direct Thermal Printing (ESC/POS)**
+   - Use direct raw printing protocols (like QZ Tray or local python print listener) to print receipts automatically without popping up a browser print window.
+4. **Export Reports (PDF / Excel)**
+   - Add export buttons to reports (F&B Sales, Table Transactions, Revenue) using Laravel Excel or DomPDF packages.
+5. **Audit Log System**
+   - Track critical operator actions (starts, manual stops, cancels, adjustments) in an `audit_logs` table for fraud prevention.
