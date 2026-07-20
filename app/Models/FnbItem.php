@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class FnbItem extends Model
 {
+    /** @use HasFactory<\Database\Factories\FnbItemFactory> */
+    use HasFactory;
+
     protected $guarded = [];
 
     protected $appends = ['image_url'];

@@ -1,51 +1,54 @@
 # PoolStream - Agent Guide
 
-Pool hall management app: billiard table control, timed sessions, F&B orders.
-Laravel 13 + Inertia.js + Vue 3 + Bootstrap 5 (not Tailwind). SQLite database.
+Pool hall management: billiard table control, timed sessions, F&B orders.
+Laravel 13 + Inertia.js + Vue 3 + Bootstrap 5. SQLite in test/dev, PostgreSQL in production.
 
 ## Commands
 
-- `composer setup` — full first-time setup (install, .env, key, migrate, npm, build)
-- `composer dev` — runs concurrently: artisan serve, queue worker, vite, schedule:work
-- `composer test` — clears config then runs `php artisan test`
-- `php artisan migrate --force` — run migrations
-- `npm run dev` — vite dev server only
-- `php artisan tables:auto-checkout` — manually trigger expired session checkout (also runs every minute via scheduler)
-
-Tests use **in-memory SQLite** (configured in `phpunit.xml`). No external services needed.
+- `composer setup` - full first-time setup (install, .env, key, migrate, npm, build)
+- `composer dev` - runs concurrently: artisan serve, queue worker, vite, schedule:work
+- `composer test` - clears config then runs `php artisan test`
+- `php artisan tables:auto-checkout` - manually trigger expired session checkout (runs every minute via scheduler)
+- `npm run dev` - vite dev server only
+- `php artisan test --filter TestName` - run a single test or class
 
 ## Architecture
 
-- **Frontend:** Vue 3 pages in `resources/js/Pages/`, resolved via Inertia. Components in `resources/js/Components/`. Custom SCSS in `resources/scss/app.scss` using `bb-` prefixed class names (Bootstrap 5 theme).
-- **Backend:** Controllers in `app/Http/Controllers/`. Models in `app/Models/`. Middleware `CheckRole` at `app/Http/Middleware/CheckRole.php` — registered as `role` alias in `bootstrap/app.php`.
-- **Routes:** `routes/web.php` (app routes), `routes/auth.php` (Breeze auth). Admin routes under `role:admin` middleware at `/master/*`. Transaction item routes: store (`POST`), update quantity (`PATCH` with `change` param), destroy (`DELETE`).
-- **Database:** SQLite at `database/database.sqlite`. Migrations in `database/migrations/`. Seed data includes 2 users (admin/kasir), 3 packages, 16 tables, 28 F&B items.
-- **Hardware:** `app/Services/relay_controller.py` — Python script for USB HID relay control, called via `shell_exec` from `TableController` and `AutoCheckoutExpiredTables`.
-- **Scheduled command:** `tables:auto-checkout` auto-completes transactions past `expected_end_time` and turns off relays. Runs every minute.
+- **Frontend:** Vue 3 `<script setup>` (no TS) in `resources/js/Pages/`, resolved via Inertia. Components in `resources/js/Components/`. Custom SCSS (`bb-` prefix classes) at `resources/scss/app.scss`. `@/` alias -> `resources/js/`. Ziggy `route()` helper available globally.
+- **Backend:** Controllers in `app/Http/Controllers/`. Models in `app/Models/`. All routes manually defined (no `Route::resource`).
+- **Routes:** `routes/web.php` (app), `routes/auth.php` (Breeze). Admin routes under `role:admin` middleware at `/master/*`. No `/register` route -- admin-only user creation via `/master/users`.
+- **Database:** `.env` uses **PostgreSQL** (`billiard` DB, `pgsql` driver). `.env.example` uses **SQLite**. Tests use **in-memory SQLite** (`phpunit.xml`). Sessions/queue/cache all database-backed (non-default).
+- **Hardware:** `app/Services/relay_controller.py` called via `shell_exec` -- **dummy placeholder** (real `hidapi` code commented out).
+- **Scheduler:** `tables:auto-checkout` completes expired transactions and turns off relays. Every minute.
 
-## Key Domain Facts
+## Domain Model
 
-- **Roles:** `admin` (full access), `kasir` (cashier — dashboard only). Enforced by `CheckRole` middleware.
-- **Models use UUIDs:** `User` and `Table` use `HasUuids`. `Transaction` uses auto-increment IDs.
-- **Table status:** `active` or `inactive`. Transactions have status: `active`, `completed`, `cancelled`.
-- **Transaction types:** `billiard` (table session) or `fnb_only` (standalone F&B order). `table_id` is nullable for F&B-only orders.
-- **Packages:** pricing per hour (e.g. Regular Siang Rp25,000, VIP Rp50,000).
-- **UI language:** Indonesian for flash messages and user-facing strings. English for code variables.
-- **Auth is username-based** (not email). No email field on users. Login uses `username`. Password reset tokens keyed by `username`.
-- **User model:** `photo_path` attribute, `photo_url` accessor via `$appends`, `is_active` boolean, `role` enum. Uses PHP attribute-based `#[Fillable]` and `#[Hidden]`.
-- **EnsureUserIsActive** middleware in global web stack — logs out and blocks disabled users.
-- **Users cannot delete their own account** — only admin can delete via `/master/users`.
-- **Profile page:** allows name edit + photo upload only. No self-delete, no email field.
-- **File uploads:** user photos stored at `storage/app/public/user_photos/` via `public` disk.
+- **Roles:** `admin` (full access), `kasir` (dashboard only). Enforced by `CheckRole` middleware.
+- **UUIDs:** `User` and `Table` use `HasUuids`. `Transaction`, `TransactionItem`, `Package`, `FnbItem` use auto-increment.
+- **Transactions:** status `active|completed|cancelled`, type `billiard` (table session) or `fnb_only` (standalone F&B). `table_id` nullable for F&B-only. Cost fields (`billiard_cost`, `fnb_cost`, `total_cost`) recalculated inline in multiple controllers (no shared service).
+- **Auth:** username-based (no email column). `password_reset_tokens` keys on `username`. Login via `username` field.
+- **User model:** `photo_path` + `photo_url` accessor, `is_active` boolean, `role` enum, PHP attribute `#[Fillable]`/`#[Hidden]`.
 
-## Conventions
+## Tests (WARNING: mostly stale Breeze scaffolding)
 
-- Sidebar uses **fixed overlay** (`position: fixed`, `transform: translateX`) across all screen sizes, not a push layout.
-- Laravel Pint is available but no custom config — uses defaults.
-- 4-space indent, LF line endings (`.editorconfig`).
-- Vue pages use `<script setup>` (Composition API). No TypeScript. Path alias: `@/` → `resources/js/`.
-- Bootstrap classes, not Tailwind, despite `@tailwindcss/forms` in devDeps (unused).
-- Ziggy provides `route()` helper in JS. Use named routes.
-- Auth scaffolding is Laravel Breeze.
-- Vite base path is `/poolstream/public/build/` — not the default.
-- SCSS compiles with deprecation warnings silenced (`color-functions`, `global-builtin`, `import`, `mixed-decls`) in vite config.
+- Only `UserFactory` exists. No factories for `Table`, `Transaction`, `Package`, `FnbItem`.
+- Profile tests reference `email`/`email_verified_at`/self-delete -- **none exist in the real app**.
+- Auth tests POST `email` field -- real app uses `username`. These tests would fail.
+- Email verification tests test a feature that doesn't exist.
+- **Zero coverage** of any domain logic (tables, transactions, F&B, packages, roles, relay control, auto-checkout).
+
+## Conventions & Gotchas
+
+- **Bootstrap 5 classes only** (no Tailwind despite `@tailwindcss/forms` in devDeps).
+- **Fixed overlay sidebar** (`position: fixed`, `translateX(-100%)`) at all screen sizes.
+- **Dark-by-default** theme via `data-bs-theme` on `<html>`, persisted to `localStorage('theme')`.
+- **UI strings in Indonesian** (`"Meja berhasil ditambahkan"`), code in English.
+- **File uploads:** user photos -> `storage/app/public/user_photos/`, F&B images -> `fnb_images/`. Always use `FormData` + `forceFormData: true`. Client-side image compression in FnbItems.vue (800px max, 85%).
+- **Cost recalculation** is duplicated across `TableController`, `TransactionItemController`, `FnbOrderController` -- no shared helper.
+- **Name auto-capitalization**: `.replace(/\b\w/g, l => l.toUpperCase())` used in multiple forms.
+- **Receipt printing:** inline HTML in `window.open()` with 80mm thermal receipt CSS.
+- **Inconsistencies:** User update uses `POST` (not PUT/PATCH). Two PATCH routes to `updateQuantity`. `ConfirmablePasswordController` references `$request->user()->email` (property doesn't exist). `Table` model has dead casts for columns dropped in migration.
+- **Vite base path:** `/poolstream/public/build/` (not default). SCSS deprecation warnings silenced in config.
+- **4-space indent, LF line endings** (`.editorconfig`).
+- **No pagination** in backend queries (all `->get()`).
+- **`FnbItem` model lacks `HasFactory`** trait (unlike other models).

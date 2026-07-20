@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\FnbItem;
+use App\Services\TransactionService;
 use Illuminate\Http\Request;
 
 class TransactionItemController extends Controller
@@ -48,8 +49,7 @@ class TransactionItemController extends Controller
             ]);
         }
 
-        // Recalculate transaction costs
-        $this->recalculateCosts($transaction);
+        TransactionService::recalculate($transaction);
 
         return back()->with('success', "{$fnbItem->name} berhasil ditambahkan.");
     }
@@ -71,7 +71,7 @@ class TransactionItemController extends Controller
 
         if ($newQty <= 0) {
             $item->delete();
-            $this->recalculateCosts($transaction);
+            TransactionService::recalculate($transaction);
             return back()->with('success', 'Item berhasil dihapus.');
         }
 
@@ -79,7 +79,7 @@ class TransactionItemController extends Controller
         $item->subtotal = $item->price * $item->quantity;
         $item->save();
 
-        $this->recalculateCosts($transaction);
+        TransactionService::recalculate($transaction);
 
         return back()->with('success', 'Jumlah berhasil diubah.');
     }
@@ -96,19 +96,8 @@ class TransactionItemController extends Controller
         }
 
         $item->delete();
-        $this->recalculateCosts($transaction);
+        TransactionService::recalculate($transaction);
 
         return back()->with('success', 'Item berhasil dihapus.');
-    }
-
-    /**
-     * Recalculate fnb_cost and total_cost on the transaction.
-     */
-    private function recalculateCosts(Transaction $transaction): void
-    {
-        $fnbCost = $transaction->items()->sum('subtotal');
-        $transaction->fnb_cost = $fnbCost;
-        $transaction->total_cost = $transaction->billiard_cost + $fnbCost;
-        $transaction->save();
     }
 }

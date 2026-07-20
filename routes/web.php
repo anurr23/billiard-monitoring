@@ -16,7 +16,7 @@ Route::get('/', function () {
     return redirect('/dashboard');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [TableController::class, 'index'])->name('dashboard');
     Route::post('/tables/{id}/start', [TableController::class, 'start'])->name('tables.start');
     Route::post('/tables/{id}/stop', [TableController::class, 'stop'])->name('tables.stop');
@@ -51,7 +51,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         Route::get('/master/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/master/users', [UserController::class, 'store'])->name('users.store');
-        Route::post('/master/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::put('/master/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/master/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/master/reports/fnb-sales', [ReportController::class, 'fnbSales'])->name('reports.fnb-sales');

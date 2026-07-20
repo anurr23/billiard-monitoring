@@ -70,7 +70,9 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: #ffffff;
+    background: rgba(255,255,255, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-right: 1px solid rgba(0,0,0,0.06);
     z-index: 1041;
     transition: all 0.3s ease;
@@ -96,16 +98,30 @@ body {
 }
 
 @media (min-width: 1200px) {
-    .bb-sidebar {
-        transform: translateX(0) !important;
-    }
     .bb-sidebar-backdrop {
         display: none !important;
+    }
+
+    .bb-sidebar.bb-sidebar--open {
+        left: 1rem;
+        top: 1rem;
+        bottom: 1rem;
+        min-height: auto;
+        height: auto;
+        border-radius: 1rem;
+        border-right: none;
+        box-shadow: 4px 8px 30px rgba(0,0,0,0.08);
+
+        [data-bs-theme="dark"] & {
+            box-shadow: 4px 8px 30px rgba(0,0,0,0.3);
+        }
     }
 }
 
 [data-bs-theme="dark"] .bb-sidebar {
-    background: #111827;
+    background: rgba(17, 24, 39, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-right: 1px solid rgba(255,255,255,0.06);
 }
 
@@ -275,20 +291,24 @@ body {
 
 .bb-header {
     height: 70px;
-    padding: 0 2rem;
+    margin: 1rem 2rem;
+    border-radius: 1rem;
+    padding: 0 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(255,255,255, 0.7);
+    background: rgba(255,255,255, 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
     flex-shrink: 0;
     z-index: 10;
 }
 [data-bs-theme="dark"] .bb-header {
-    background: rgba(17, 24, 39, 0.7);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(17, 24, 39, 0.75);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
 }
 
 .bb-header-title {
@@ -380,31 +400,47 @@ body {
 .bb-table-card {
     border-radius: 1.25rem;
     border: 1px solid rgba(0,0,0,0.06);
-    background: #fff;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     overflow: hidden;
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 [data-bs-theme="dark"] .bb-table-card {
-    background: #1e293b;
+    background: rgba(30, 41, 59, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 .bb-table-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.1);
+    border-color: rgba(0,0,0,0.1);
 }
 [data-bs-theme="dark"] .bb-table-card:hover {
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+    border-color: rgba(255,255,255,0.12);
 }
 
 // Active glow
 .bb-table-card--active {
-    border-color: rgba(16, 185, 129, 0.25);
-    background: linear-gradient(135deg, rgba(16,185,129,0.04), rgba(5,150,105,0.08));
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 2px 16px rgba(16,185,129,0.08), inset 0 0 60px rgba(16,185,129,0.03);
 }
 [data-bs-theme="dark"] .bb-table-card--active {
-    background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(2,44,34,0.3));
-    border-color: rgba(16,185,129,0.2);
+    background: rgba(15, 30, 25, 0.9);
+    border-color: rgba(16,185,129,0.25);
+    box-shadow: 0 2px 16px rgba(16,185,129,0.12), inset 0 0 60px rgba(16,185,129,0.05);
+}
+.bb-table-card--active:hover {
+    box-shadow: 0 12px 36px rgba(16,185,129,0.15);
+}
+[data-bs-theme="dark"] .bb-table-card--active:hover {
+    box-shadow: 0 12px 36px rgba(16,185,129,0.2);
 }
 .bb-table-card--active::before {
     content: '';
@@ -413,9 +449,10 @@ body {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #10b981, #34d399, #10b981);
+    background: linear-gradient(90deg, #10b981, #34d399, #059669, #10b981);
     background-size: 200% 100%;
-    animation: shimmer 3s linear infinite;
+    animation: shimmer 2.5s linear infinite;
+    z-index: 1;
 }
 
 @keyframes shimmer {
@@ -542,12 +579,18 @@ body {
 .bb-card {
     border-radius: 1.25rem;
     border: 1px solid rgba(0,0,0,0.06);
-    background: #fff;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 [data-bs-theme="dark"] .bb-card {
-    background: #1e293b;
+    background: rgba(30, 41, 59, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 
 .bb-card-header {
@@ -558,6 +601,41 @@ body {
 }
 .bb-card-body {
     padding: 1.5rem 1.75rem;
+}
+
+.bb-order-card {
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.bb-order-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+}
+[data-bs-theme="dark"] .bb-order-card:hover {
+    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+}
+.bb-order-card--active {
+    border-top: 3px solid #f59e0b;
+}
+.bb-order-card--completed {
+    border-top: 3px solid #10b981;
+}
+.bb-order-card--cancelled {
+    border-top: 3px solid #6c757d;
+}
+
+.bb-queue-number {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 1.1rem;
+    background: rgba(245,158,11,0.12);
+    color: #f59e0b;
 }
 
 .bb-table {
@@ -590,10 +668,10 @@ body {
     transition: all 0.2s ease;
 }
 .bb-table tbody tr:hover {
-    background: rgba(0,0,0,0.015);
+    background: rgba(16, 185, 129, 0.04);
 }
 [data-bs-theme="dark"] .bb-table tbody tr:hover {
-    background: rgba(255,255,255,0.02);
+    background: rgba(16, 185, 129, 0.08);
 }
 .bb-table tbody tr:last-child td {
     border-bottom: none;
@@ -658,18 +736,24 @@ body {
     animation: fadeIn 0.2s ease;
 }
 .bb-modal {
-    background: #fff;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-radius: 1.5rem;
     width: 100%;
     max-width: 480px;
     margin: 1rem;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15);
     animation: slideUp 0.3s ease;
     overflow: hidden;
 }
 [data-bs-theme="dark"] .bb-modal {
-    background: #1e293b;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    background: rgba(30, 41, 59, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.4);
 }
 .bb-modal-header {
     padding: 1.5rem 1.75rem 0.5rem;
@@ -830,12 +914,17 @@ body {
 .bb-page-content {
     flex: 1;
     overflow-y: auto;
-    padding: 1.5rem 2rem;
+    padding: 0.75rem 2rem 1.5rem;
+}
+
+.bb-main {
+    transition: margin-left 0.3s ease;
+    margin-left: 0;
 }
 
 @media (min-width: 1200px) {
-    .bb-main {
-        margin-left: var(--bb-sidebar-width);
+    .bb-main--shifted {
+        margin-left: calc(var(--bb-sidebar-width) + 1rem);
     }
 }
 
@@ -955,8 +1044,76 @@ body {
 }
 
 /* Mobile Responsive */
-@media (max-width: 991.98px) {  
-    .bb-header { padding: 1rem 1.25rem; }  
-    .bb-page-content { padding: 1.25rem; }  
-    .bb-stat-card { padding: 1.25rem; }  
+@media (max-width: 991.98px) {
+    .bb-header {
+        margin: 0.75rem;
+        border-radius: 0.75rem;
+        padding: 0 1rem;
+    }
+    .bb-page-content { padding: 0.75rem 1.25rem 1.25rem; }
+    .bb-stat-card { padding: 1.25rem; }
+}
+
+/* Tablet */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .bb-header {
+        margin: 0.875rem 1.25rem;
+        border-radius: 0.875rem;
+    }
+}
+
+// ============================================================
+// 10. FLATPICKR THEME INTEGRATION
+// ============================================================
+@import 'flatpickr/dist/flatpickr.css';
+
+[data-bs-theme="dark"] {
+    @import 'flatpickr/dist/themes/dark.css';
+
+    .flatpickr-calendar {
+        background: rgba(30, 41, 59, 0.95) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .flatpickr-day {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .flatpickr-day.flatpickr-disabled, .flatpickr-day.flatpickr-disabled:hover,
+    .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay,
+    .flatpickr-day.notAllowed, .flatpickr-day.notAllowed.prevMonthDay, .flatpickr-day.notAllowed.nextMonthDay {
+        color: rgba(255, 255, 255, 0.3) !important;
+    }
+
+    span.flatpickr-weekday {
+        color: rgba(255, 255, 255, 0.6) !important;
+    }
+
+    .flatpickr-current-month .flatpickr-monthDropdown-months {
+        background: rgba(30, 41, 59, 1) !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .flatpickr-current-month input.cur-year {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
+        background: var(--bb-accent) !important;
+        border-color: var(--bb-accent) !important;
+    }
+
+    .flatpickr-months .flatpickr-month,
+    .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month {
+        color: rgba(255,255,255,0.9) !important;
+        fill: rgba(255,255,255,0.9) !important;
+    }
+    
+    .flatpickr-time input, .flatpickr-time .flatpickr-time-separator, .flatpickr-time .flatpickr-am-pm {
+        color: rgba(255,255,255,0.9) !important;
+    }
 } 

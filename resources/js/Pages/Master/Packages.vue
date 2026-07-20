@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { useDatatable } from '@/Composables/useDatatable';
 
 const props = defineProps({
@@ -69,10 +70,23 @@ const closeModal = () => {
     }, 300);
 };
 
-const deletePackage = (id) => {
-    if(confirm('Hapus paket ini?')) {
-        router.delete(route('packages.destroy', id));
-    }
+const confirmDelete = ref({
+    show: false,
+    id: null
+});
+
+const openDeleteConfirm = (id) => {
+    confirmDelete.value = { show: true, id };
+};
+
+const executeDelete = () => {
+    if (!confirmDelete.value.id) return;
+    
+    router.delete(route('packages.destroy', confirmDelete.value.id), {
+        onSuccess: () => {
+            confirmDelete.value.show = false;
+        }
+    });
 };
 </script>
 
@@ -126,7 +140,7 @@ const deletePackage = (id) => {
                                         <button @click="editPackage(pkg)" class="bb-btn bb-btn--ghost py-1 px-3 me-2" style="font-size: 0.8rem; text-transform: none;">
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
-                                        <button @click="deletePackage(pkg.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
+                                        <button @click="openDeleteConfirm(pkg.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
                                             <i class="bi bi-trash3 text-danger"></i>
                                         </button>
                                     </td>
@@ -190,6 +204,15 @@ const deletePackage = (id) => {
                 </div>
             </div>
         </div>
+
+        <ConfirmModal 
+            :show="confirmDelete.show"
+            title="Hapus Paket"
+            message="Apakah Anda yakin ingin menghapus paket biliar ini? Aksi ini tidak dapat dibatalkan."
+            confirmText="Ya, Hapus"
+            @confirm="executeDelete"
+            @cancel="confirmDelete.show = false"
+        />
 
     </AuthenticatedLayout>
 </template>

@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import BbSelect from '@/Components/BbSelect.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { printReceipt } from '@/utils/receipt';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 
 const props = defineProps({
@@ -449,143 +450,6 @@ const getFilteredHistory = (transactions) => {
     const query = historySearch.value.toLowerCase();
     return result.filter(tx => tx.customer_name && tx.customer_name.toLowerCase().includes(query));
 };
-
-// ─── Receipt Printing ───────────────────────────────────
-const printReceipt = (transaction) => {
-    const kasirName = usePage().props.auth?.user?.name || 'Kasir';
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-    const fmtPrice = (val) => {
-        const n = Number(val) || 0;
-        return n.toLocaleString('id-ID');
-    };
-
-    let itemsHtml = '';
-    if (transaction.items && transaction.items.length > 0) {
-        transaction.items.forEach(item => {
-            const name = item.fnb_item?.name || item.name || 'Item';
-            itemsHtml += `
-                <tr>
-                    <td style="padding: 2px 0;">${name} x${item.quantity}</td>
-                    <td style="padding: 2px 0; text-align: right;">${fmtPrice(item.subtotal)}</td>
-                </tr>
-            `;
-        });
-    }
-
-    const isBilliard = transaction.type === 'billiard';
-    const billiardCost = Number(transaction.billiard_cost) || 0;
-    const fnbCost = Number(transaction.fnb_cost) || 0;
-    const totalCost = billiardCost + fnbCost;
-
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Struk #${transaction.id || ''}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            width: 80mm;
-            padding: 8px;
-            color: #000;
-        }
-        .center { text-align: center; }
-        .right { text-align: right; }
-        .bold { font-weight: bold; }
-        .divider {
-            border-top: 1px dashed #000;
-            margin: 6px 0;
-        }
-        .double-divider {
-            border-top: 2px solid #000;
-            margin: 6px 0;
-        }
-        .store-name { font-size: 18px; font-weight: bold; letter-spacing: 2px; }
-        .total-row { font-size: 16px; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; }
-        td { vertical-align: top; }
-        .footer { margin-top: 10px; font-size: 11px; }
-        @media print {
-            body { width: 80mm; }
-            @page { size: 80mm auto; margin: 0; }
-        }
-    </style>
-</head>
-<body>
-    <div class="center">
-        <div class="store-name">POOLSTREAM</div>
-        <div style="font-size: 10px; margin-top: 2px;">Billiard & Lounge</div>
-    </div>
-    <div class="double-divider"></div>
-
-    <table>
-        <tr><td>No</td><td class="right">#${transaction.id || '-'}</td></tr>
-        <tr><td>Tanggal</td><td class="right">${dateStr} ${timeStr}</td></tr>
-        <tr><td>Kasir</td><td class="right">${kasirName}</td></tr>
-        <tr><td>Customer</td><td class="right">${transaction.customer_name || '-'}</td></tr>
-        ${isBilliard && transaction.table_name ? `<tr><td>Meja</td><td class="right">${transaction.table_name}</td></tr>` : ''}
-    </table>
-
-    ${isBilliard ? `
-        <div class="divider"></div>
-        <div class="bold" style="margin-bottom: 4px;">BILIAR</div>
-        <table>
-            <tr>
-                <td>${transaction.package?.name || 'Paket'} x ${calculateDuration(transaction)}</td>
-                <td class="right">${fmtPrice(billiardCost)}</td>
-            </tr>
-        </table>
-    ` : ''}
-
-    ${transaction.items && transaction.items.length > 0 ? `
-        <div class="divider"></div>
-        <div class="bold" style="margin-bottom: 4px;">F&B</div>
-        <table>${itemsHtml}</table>
-    ` : ''}
-
-    <div class="divider"></div>
-    <table>
-        ${isBilliard ? `
-            <tr><td>Subtotal Biliar</td><td class="right">${fmtPrice(billiardCost)}</td></tr>
-            <tr><td>Subtotal F&B</td><td class="right">${fmtPrice(fnbCost)}</td></tr>
-        ` : `
-            <tr><td>Subtotal F&B</td><td class="right">${fmtPrice(fnbCost)}</td></tr>
-        `}
-    </table>
-    <div class="double-divider"></div>
-    <table>
-        <tr class="total-row">
-            <td>TOTAL</td>
-            <td class="right">Rp ${fmtPrice(totalCost)}</td>
-        </tr>
-    </table>
-    <div class="double-divider"></div>
-
-    <div class="center footer">
-        <div>Terima kasih!</div>
-        <div>Selamat bermain 🎱</div>
-    </div>
-
-    <script>
-        window.onload = function() {
-            window.print();
-        };
-    <\/script>
-</body>
-</html>`;
-
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-    }
-};
 </script>
 
 <template>
@@ -695,7 +559,7 @@ const printReceipt = (transaction) => {
         <!-- Table History Modal (NEW)                          -->
         <!-- ═══════════════════════════════════════════════════ -->
         <div v-if="showTableHistoryModal && selectedTableForHistory" class="bb-modal-backdrop">
-            <div class="bb-modal" style="max-width: 650px; width: 95%;">
+            <div class="bb-modal" style="max-width: 900px; width: 95%;">
                 <!-- Header -->
                 <div class="bb-modal-header">
                     <div>
@@ -711,17 +575,33 @@ const printReceipt = (transaction) => {
 
                 <div class="bb-modal-body p-4" style="max-height: 65vh; overflow-y: auto;">
                     <!-- Active Session / Add New Session -->
-                    <div class="mb-4 d-flex justify-content-between align-items-center p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
-                        <div>
-                            <span class="fw-bold fs-6">Status Meja: </span>
-                            <span v-if="selectedTableForHistory.status === 'active'" class="badge bg-success ms-2 px-2 py-1">Sedang Jalan</span>
-                            <span v-else class="badge bg-secondary ms-2 px-2 py-1">Kosong</span>
+                    <div class="mb-4 p-3 rounded-4 d-flex justify-content-between align-items-center bb-card" 
+                         :style="{
+                             background: selectedTableForHistory.status === 'active' ? 'rgba(16,185,129,0.05)' : '',
+                             border: selectedTableForHistory.status === 'active' ? '1px solid rgba(16,185,129,0.2)' : ''
+                         }">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="fw-bold opacity-75">Status Meja:</div>
+                            
+                            <!-- Active Badge -->
+                            <div v-if="selectedTableForHistory.status === 'active'" 
+                                 class="d-flex align-items-center gap-2 px-3 py-1 rounded-pill" 
+                                 style="background: #10b981; color: white; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+                                <span class="spinner-grow spinner-grow-sm" style="width: 10px; height: 10px;" role="status"></span>
+                                <span class="fw-bold" style="font-size: 0.85rem; letter-spacing: 0.5px; padding-top: 1px;">SEDANG JALAN</span>
+                            </div>
+                            
+                            <!-- Empty Badge -->
+                            <div v-else 
+                                 class="d-flex align-items-center gap-2 px-3 py-1 rounded-pill" 
+                                 style="background: rgba(128,128,128,0.08); border: 1px solid rgba(128,128,128,0.2);">
+                                <i class="bi bi-dash-circle-fill opacity-50"></i>
+                                <span class="fw-bold opacity-75" style="font-size: 0.85rem; letter-spacing: 0.5px; padding-top: 1px;">KOSONG</span>
+                            </div>
                         </div>
                         
-                        <div v-if="selectedTableForHistory.status === 'active'">
-                        </div>
-                        <div v-else>
-                            <button @click="showTableHistoryModal = false; openOrderModal(selectedTableForHistory)" class="bb-btn bb-btn--primary bb-btn--sm">
+                        <div v-if="selectedTableForHistory.status !== 'active'">
+                            <button @click="showTableHistoryModal = false; openOrderModal(selectedTableForHistory)" class="bb-btn bb-btn--primary bb-btn--sm px-4 rounded-pill fw-bold" style="box-shadow: 0 4px 12px rgba(99,102,241,0.25);">
                                 <i class="bi bi-play-fill me-1"></i> Mulai Sesi Baru
                             </button>
                         </div>
@@ -729,24 +609,25 @@ const printReceipt = (transaction) => {
 
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-list-ul text-secondary"></i> Riwayat Transaksi
+                            <i class="bi bi-list-ul opacity-75"></i> Riwayat Transaksi
                         </h6>
                         <div class="position-relative" style="width: 220px;">
                             <input type="text" v-model="historySearch" class="bb-input py-1 px-3" placeholder="Cari nama pelanggan..." style="font-size: 0.8rem; padding-left: 2rem !important;" />
-                            <i class="bi bi-search position-absolute top-50 translate-middle-y text-secondary opacity-75" style="left: 0.6rem; font-size: 0.75rem;"></i>
+                            <i class="bi bi-search position-absolute top-50 translate-middle-y opacity-50" style="left: 0.6rem; font-size: 0.75rem;"></i>
                         </div>
                     </div>
 
-                    <div v-if="getFilteredHistory(selectedTableForHistory.recent_transactions)?.length > 0" class="d-flex flex-column gap-3">
-                        <div v-for="tx in getFilteredHistory(selectedTableForHistory.recent_transactions)" :key="tx.id" class="bb-card rounded-4 position-relative overflow-hidden d-flex flex-column mb-3" 
-                             :style="{
-                                border: tx.status === 'active' 
-                                    ? '1px solid rgba(16,185,129,0.5)' 
-                                    : (tx.status === 'cancelled' ? '1px solid rgba(239,68,68,0.3)' : ''),
-                                boxShadow: tx.status === 'active' 
-                                    ? '0 0 15px rgba(16,185,129,0.15)' 
-                                    : ''
-                             }">
+                    <div v-if="getFilteredHistory(selectedTableForHistory.recent_transactions)?.length > 0" class="row g-3">
+                        <div v-for="tx in getFilteredHistory(selectedTableForHistory.recent_transactions)" :key="tx.id" class="col-md-6">
+                            <div class="bb-card rounded-4 position-relative overflow-hidden d-flex flex-column h-100" 
+                                 :style="{
+                                    border: tx.status === 'active' 
+                                        ? '1px solid rgba(16,185,129,0.5)' 
+                                        : (tx.status === 'cancelled' ? '1px solid rgba(239,68,68,0.3)' : ''),
+                                    boxShadow: tx.status === 'active' 
+                                        ? '0 0 15px rgba(16,185,129,0.15)' 
+                                        : ''
+                                 }">
                              
                             <!-- Left Accent Line -->
                             <div class="position-absolute top-0 bottom-0 start-0" 
@@ -770,7 +651,7 @@ const printReceipt = (transaction) => {
                                                 padding: '0.35em 0.75em',
                                                 letterSpacing: '0.5px'
                                             }">{{ tx.status === 'active' ? '● AKTIF' : (tx.status === 'completed' ? 'SELESAI' : 'BATAL') }}</span>
-                                            <span class="text-secondary" style="font-size: 0.78rem;"><i class="bi bi-calendar3 me-1"></i>{{ formatDate(tx.start_time) }}</span>
+                                            <span class="opacity-75" style="font-size: 0.78rem;"><i class="bi bi-calendar3 me-1"></i>{{ formatDate(tx.start_time) }}</span>
                                         </div>
                                     </div>
                                     <div class="d-flex gap-1" style="z-index: 2; position: relative;">
@@ -783,21 +664,21 @@ const printReceipt = (transaction) => {
                                     </div>
                                 </div>
                                 
-                                <!-- Billiard details -->
-                                <div class="d-flex justify-content-between mb-2" style="font-size: 0.85rem;">
-                                    <span class="text-secondary"><i class="bi bi-play-circle me-2" style="color: #10b981;"></i>Paket Biliar ({{ tx.package?.name }})</span>
-                                    <span class="fw-semibold">{{ formatRupiah(tx.billiard_cost) }}</span>
-                                </div>
+                                    <!-- Billiard details -->
+                                    <div class="d-flex justify-content-between mb-2" style="font-size: 0.85rem;">
+                                        <span class="opacity-75"><i class="bi bi-play-circle me-2" style="color: #10b981;"></i>Paket Biliar ({{ tx.package?.name }})</span>
+                                        <span class="fw-semibold">{{ formatRupiah(tx.billiard_cost) }}</span>
+                                    </div>
                                 
                                 <!-- F&B details -->
                                 <div v-if="tx.items && tx.items.length > 0">
                                     <div class="d-flex justify-content-between mb-1" style="font-size: 0.85rem;">
-                                        <span class="text-secondary"><i class="bi bi-cup-hot me-2 text-warning"></i>Pesanan F&B ({{ tx.items.length }} item)</span>
+                                        <span class="opacity-75"><i class="bi bi-cup-hot me-2 text-warning"></i>Pesanan F&B ({{ tx.items.length }} item)</span>
                                         <span class="fw-semibold">{{ formatRupiah(tx.fnb_cost) }}</span>
                                     </div>
                                     <!-- F&B Items Breakdown -->
                                     <div class="ms-4 ps-2 mt-2 mb-2" style="border-left: 2px solid rgba(16,185,129,0.15);">
-                                        <div v-for="item in tx.items" :key="item.id" class="d-flex justify-content-between text-secondary" style="font-size: 0.75rem; margin-bottom: 2px;">
+                                        <div v-for="item in tx.items" :key="item.id" class="d-flex justify-content-between opacity-75" style="font-size: 0.75rem; margin-bottom: 2px;">
                                             <span>{{ item.fnb_item?.name || 'Item' }} <span class="opacity-50">x{{ item.quantity }}</span></span>
                                             <span>{{ formatRupiah(item.subtotal) }}</span>
                                         </div>
@@ -805,11 +686,12 @@ const printReceipt = (transaction) => {
                                 </div>
                             </div>
                             
-                            <!-- Card Footer (Total Cost) -->
-                            <div class="p-3 ps-4 mt-auto d-flex justify-content-between align-items-center" 
-                                 style="background: rgba(16,185,129,0.06); border-top: 1px solid rgba(16,185,129,0.12);">
-                                <span class="fw-bold text-secondary" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Total Pembayaran</span>
-                                <span class="fw-bold fs-5" style="color: #10b981;">{{ formatRupiah(Number(tx.billiard_cost) + Number(tx.fnb_cost)) }}</span>
+                                <!-- Card Footer (Total Cost) -->
+                                <div class="p-3 ps-4 mt-auto d-flex justify-content-between align-items-center" 
+                                     style="background: rgba(16,185,129,0.06); border-top: 1px solid rgba(16,185,129,0.12);">
+                                    <span class="fw-bold opacity-75" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Total Pembayaran</span>
+                                    <span class="fw-bold fs-5" style="color: #10b981;">{{ formatRupiah(Number(tx.billiard_cost) + Number(tx.fnb_cost)) }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

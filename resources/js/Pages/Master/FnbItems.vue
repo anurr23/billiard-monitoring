@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { useDatatable } from '@/Composables/useDatatable';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import BbSelect from '@/Components/BbSelect.vue';
 
 const props = defineProps({
@@ -142,13 +143,26 @@ const cancelEdit = () => {
     showModal.value = false;
 };
 
-const deleteItem = (id) => {
-    if(confirm('Hapus menu ini?')) {
-        router.delete(route('fnb_items.destroy', id));
-        if(isEditing.value && editId.value === id) {
-            cancelEdit();
+const confirmDelete = ref({
+    show: false,
+    id: null
+});
+
+const openDeleteConfirm = (id) => {
+    confirmDelete.value = { show: true, id };
+};
+
+const executeDelete = () => {
+    if (!confirmDelete.value.id) return;
+    
+    router.delete(route('fnb_items.destroy', confirmDelete.value.id), {
+        onSuccess: () => {
+            if(isEditing.value && editId.value === confirmDelete.value.id) {
+                cancelEdit();
+            }
+            confirmDelete.value.show = false;
         }
-    }
+    });
 };
 </script>
 
@@ -226,7 +240,7 @@ const deleteItem = (id) => {
                                             <button @click="editItem(item)" class="bb-btn bb-btn--ghost py-1 px-3 me-2" style="font-size: 0.8rem; text-transform: none;">
                                                 <i class="bi bi-pencil"></i> Edit
                                             </button>
-                                            <button @click="deleteItem(item.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
+                                            <button @click="openDeleteConfirm(item.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
                                                 <i class="bi bi-trash3 text-danger"></i> Hapus
                                             </button>
                                         </td>
@@ -258,14 +272,14 @@ const deleteItem = (id) => {
         </div>
 
         <!-- Add/Edit Modal Overlay -->
-        <div v-if="showModal" class="bb-modal-backdrop d-flex align-items-center justify-content-center" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 1050; backdrop-filter: blur(4px);" @click.self="cancelEdit">
-            <div class="bb-card w-100 mx-3 shadow-lg" style="max-width: 500px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1);">
-                <div class="bb-card-header d-flex justify-content-between align-items-center sticky-top" style="background: var(--bb-surface-2); z-index: 10;">
-                    <h6 v-if="!isEditing" class="fw-bold mb-0"><i class="bi bi-plus-circle me-2 text-success"></i>Tambah Menu</h6>
-                    <h6 v-else class="fw-bold mb-0"><i class="bi bi-pencil-square me-2 text-warning"></i>Edit Menu</h6>
-                    <button type="button" @click="cancelEdit" class="btn btn-sm border-0 text-secondary" style="background: transparent;"><i class="bi bi-x-lg fs-5"></i></button>
+        <div v-if="showModal" class="bb-modal-backdrop" @click.self="cancelEdit">
+            <div class="bb-modal">
+                <div class="bb-modal-header">
+                    <h5 v-if="!isEditing" class="m-0 bb-text-primary"><i class="bi bi-plus-circle me-2 text-success"></i>Tambah Menu</h5>
+                    <h5 v-else class="m-0 bb-text-primary"><i class="bi bi-pencil-square me-2 text-warning"></i>Edit Menu</h5>
+                    <button type="button" class="btn-close" @click="cancelEdit"></button>
                 </div>
-                <div class="bb-card-body">
+                <div class="bb-modal-body">
                     <form @submit.prevent="submit">
                         <div class="mb-3">
                             <label class="bb-label">Nama Menu</label>
@@ -315,6 +329,15 @@ const deleteItem = (id) => {
                 </div>
             </div>
         </div>
+
+        <ConfirmModal 
+            :show="confirmDelete.show"
+            title="Hapus Menu F&B"
+            message="Apakah Anda yakin ingin menghapus menu F&B ini? Aksi ini tidak dapat dibatalkan."
+            confirmText="Ya, Hapus"
+            @confirm="executeDelete"
+            @cancel="confirmDelete.show = false"
+        />
 
     </AuthenticatedLayout>
 </template>

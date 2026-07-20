@@ -14,7 +14,7 @@ class FnbOrderController extends Controller
 {
     public function index()
     {
-        $fnbItems = FnbItem::orderBy('category')->orderBy('name')->get();
+        $fnbItems = FnbItem::orderBy('name')->get();
         $fnbOrders = Transaction::fnbOnly()
             ->where('status', 'active')
             ->with('items.fnbItem')
@@ -60,25 +60,20 @@ class FnbOrderController extends Controller
             'status' => 'active',
         ]);
 
-        if ($request->has('items') && is_array($request->items)) {
-            $fnbCost = 0;
-            foreach ($request->items as $item) {
-                $fnbItem = \App\Models\FnbItem::find($item['fnb_item_id']);
-                if (!$fnbItem) continue;
+            if ($request->has('items') && is_array($request->items)) {
+                foreach ($request->items as $item) {
+                    $fnbItem = \App\Models\FnbItem::find($item['fnb_item_id']);
+                    if (!$fnbItem) continue;
 
-                $subtotal = $fnbItem->price * $item['quantity'];
-                $transaction->items()->create([
-                    'fnb_item_id' => $fnbItem->id,
-                    'price' => $fnbItem->price,
-                    'quantity' => $item['quantity'],
-                    'subtotal' => $subtotal,
-                ]);
-                $fnbCost += $subtotal;
+                    $transaction->items()->create([
+                        'fnb_item_id' => $fnbItem->id,
+                        'price' => $fnbItem->price,
+                        'quantity' => $item['quantity'],
+                        'subtotal' => $fnbItem->price * $item['quantity'],
+                    ]);
+                }
+                \App\Services\TransactionService::recalculate($transaction);
             }
-            $transaction->fnb_cost = $fnbCost;
-            $transaction->total_cost = $fnbCost;
-            $transaction->save();
-        }
 
         return back()->with('success', 'Pesanan F&B berhasil dibuat.');
     }
@@ -97,12 +92,11 @@ class FnbOrderController extends Controller
         }
 
         // Recalculate costs from items
-        $fnbCost = $transaction->items()->sum('subtotal');
-        $transaction->fnb_cost = $fnbCost;
-        $transaction->total_cost = $fnbCost;
         $transaction->end_time = Carbon::now();
         $transaction->status = 'completed';
         $transaction->save();
+        
+        \App\Services\TransactionService::recalculate($transaction);
 
         return back()->with('success', 'Pesanan F&B berhasil di-checkout.');
     }

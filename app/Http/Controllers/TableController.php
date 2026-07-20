@@ -20,7 +20,7 @@ class TableController extends Controller
             'recentTransactions'
         ])->get()->sortBy('name', SORT_NATURAL)->values();
         $packages = \App\Models\Package::all();
-        $fnbItems = FnbItem::orderBy('category')->orderBy('name')->get();
+        $fnbItems = FnbItem::orderBy('name')->get();
 
         return Inertia::render('Dashboard', [
             'tables' => $tables,
@@ -105,23 +105,18 @@ class TableController extends Controller
 
             // Add F&B Items if provided
             if ($request->has('items') && is_array($request->items)) {
-                $fnbCost = 0;
                 foreach ($request->items as $item) {
                     $fnbItem = \App\Models\FnbItem::find($item['fnb_item_id']);
                     if (!$fnbItem) continue;
 
-                    $subtotal = $fnbItem->price * $item['quantity'];
                     $transaction->items()->create([
                         'fnb_item_id' => $fnbItem->id,
                         'price' => $fnbItem->price,
                         'quantity' => $item['quantity'],
-                        'subtotal' => $subtotal,
+                        'subtotal' => $fnbItem->price * $item['quantity'],
                     ]);
-                    $fnbCost += $subtotal;
                 }
-                $transaction->fnb_cost = $fnbCost;
-                $transaction->total_cost = $transaction->billiard_cost + $fnbCost;
-                $transaction->save();
+                \App\Services\TransactionService::recalculate($transaction);
             }
 
             // Execute python script to turn ON relay
@@ -175,35 +170,28 @@ class TableController extends Controller
                 $transaction->items()->whereNotIn('fnb_item_id', $receivedItemIds)->delete();
                 $transaction->items()->where('quantity', '<=', 0)->delete();
 
-                $fnbCost = 0;
                 foreach ($request->items as $item) {
                     if ($item['quantity'] <= 0) continue;
                     
                     $fnbItem = \App\Models\FnbItem::find($item['fnb_item_id']);
                     if (!$fnbItem) continue;
 
-                    $subtotal = $fnbItem->price * $item['quantity'];
                     $transaction->items()->updateOrCreate(
                         ['fnb_item_id' => $fnbItem->id],
                         [
                             'price' => $fnbItem->price,
                             'quantity' => $item['quantity'],
-                            'subtotal' => $subtotal,
+                            'subtotal' => $fnbItem->price * $item['quantity'],
                         ]
                     );
-                    $fnbCost += $subtotal;
                 }
-                $transaction->fnb_cost = $fnbCost;
             } else {
                 $transaction->items()->delete();
-                $transaction->fnb_cost = 0;
             }
 
-            // Recalculate costs
             $transaction->billiard_cost = $package->price * $request->duration_hours;
-            $transaction->total_cost = $transaction->billiard_cost + $transaction->fnb_cost;
-            
             $transaction->save();
+            \App\Services\TransactionService::recalculate($transaction);
         }
 
         return back()->with('success', 'Sesi berhasil diperbarui.');
@@ -223,13 +211,10 @@ class TableController extends Controller
                 ->first();
                 
             if ($transaction) {
-                // Recalculate fnb_cost from actual items
-                $fnbCost = $transaction->items()->sum('subtotal');
-                $transaction->fnb_cost = $fnbCost;
                 $transaction->end_time = Carbon::now();
-                $transaction->total_cost = $transaction->billiard_cost + $fnbCost;
                 $transaction->status = 'completed';
                 $transaction->save();
+                \App\Services\TransactionService::recalculate($transaction);
             }
             
             // Execute python script to turn OFF relay
@@ -244,7 +229,11 @@ class TableController extends Controller
         $scriptPath = base_path('app/Services/relay_controller.py');
         // Use 'py' instead of 'python' on Windows environments if python command is not recognized, or check if py exists
         $pyCmd = 'py';
-        $command = escapeshellcmd("$pyCmd \"$scriptPath\" $channel $state");
+        $channelArg = escapeshellarg($channel);
+        $stateArg = escapeshellarg($state);
+        $scriptPathArg = escapeshellarg($scriptPath);
+        
+        $command = escapeshellcmd("$pyCmd $scriptPathArg $channelArg $stateArg");
         shell_exec($command);
     }
 }

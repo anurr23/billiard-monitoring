@@ -2,6 +2,7 @@
 import { ref, computed, toRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { useDatatable } from '@/Composables/useDatatable';
 import BbSelect from '@/Components/BbSelect.vue';
 
@@ -96,7 +97,7 @@ const submit = () => {
     }
 
     const formData = new FormData();
-    // No _method override because route is actually POST in web.php
+    formData.append('_method', 'PUT');
     formData.append('name', form.name);
     formData.append('username', form.username);
     formData.append('role', form.role);
@@ -105,7 +106,6 @@ const submit = () => {
     if (form.photo instanceof File) formData.append('photo', form.photo);
 
     if (isEditing.value) {
-        // We removed the inner formData.append('_method') from here as it's set above
         router.post(route('users.update', editId.value), formData, {
             onSuccess: () => closeModal(),
             forceFormData: true
@@ -130,16 +130,23 @@ const closeModal = () => {
     }, 300);
 };
 
-const deleteUser = (id) => {
-    if(confirm('Hapus user ini?')) {
-        router.delete(route('users.destroy', id), {
-            onError: (errors) => {
-                if(errors.message) {
-                    alert(errors.message);
-                }
-            }
-        });
-    }
+const confirmDelete = ref({
+    show: false,
+    id: null
+});
+
+const openDeleteConfirm = (id) => {
+    confirmDelete.value = { show: true, id };
+};
+
+const executeDelete = () => {
+    if (!confirmDelete.value.id) return;
+    
+    router.delete(route('users.destroy', confirmDelete.value.id), {
+        onSuccess: () => {
+            confirmDelete.value.show = false;
+        }
+    });
 };
 
 const toggleActive = (user) => {
@@ -226,7 +233,7 @@ const toggleActive = (user) => {
                                         <button @click="editUser(user)" class="bb-btn bb-btn--ghost py-1 px-3 me-2" style="font-size: 0.8rem; text-transform: none;">
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
-                                        <button v-if="$page.props.auth.user.id !== user.id" @click="deleteUser(user.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
+                                        <button v-if="$page.props.auth.user.id !== user.id" @click="openDeleteConfirm(user.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
                                             <i class="bi bi-trash3 text-danger"></i>
                                         </button>
                                     </td>
@@ -342,6 +349,15 @@ const toggleActive = (user) => {
                 </div>
             </div>
         </div>
+
+        <ConfirmModal 
+            :show="confirmDelete.show"
+            title="Hapus User"
+            message="Apakah Anda yakin ingin menghapus user ini? Aksi ini tidak dapat dibatalkan."
+            confirmText="Ya, Hapus"
+            @confirm="executeDelete"
+            @cancel="confirmDelete.show = false"
+        />
 
     </AuthenticatedLayout>
 </template>

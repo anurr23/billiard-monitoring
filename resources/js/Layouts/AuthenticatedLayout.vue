@@ -1,17 +1,20 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import Toast from '@/Components/Toast.vue';
 
 const isDark = ref(true);
 const currentTime = ref('');
-const isSidebarOpen = ref(false);
+const isSidebarOpen = ref(true);
 
 const toggleSidebar = () => {
     isSidebarOpen.value = !isSidebarOpen.value;
 };
 
 const closeSidebarMobile = () => {
-    isSidebarOpen.value = false;
+    if (window.innerWidth < 1200) {
+        isSidebarOpen.value = false;
+    }
 };
 
 const toggleTheme = () => {
@@ -32,6 +35,11 @@ onMounted(() => {
         isDark.value = true;
         document.documentElement.setAttribute('data-bs-theme', 'dark');
     }
+    
+    if (window.innerWidth < 1200) {
+        isSidebarOpen.value = false;
+    }
+
     updateClock();
     setInterval(updateClock, 1000);
 });
@@ -42,6 +50,7 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
 
 <template>
     <div class="d-flex" style="height: 100vh; overflow: hidden; position: relative;">
+        <Toast />
         
         <!-- Mobile Sidebar Backdrop -->
         <div v-if="isSidebarOpen" class="bb-sidebar-backdrop" @click="closeSidebarMobile"></div>
@@ -151,7 +160,7 @@ const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
         </aside>
 
         <!-- Main Content Area -->
-        <main class="flex-grow-1 d-flex flex-column overflow-hidden bb-main">
+        <main class="flex-grow-1 d-flex flex-column overflow-hidden bb-main" :class="{ 'bb-main--shifted': isSidebarOpen }">
             <!-- Header Bar -->
             <header class="bb-header">
                 <div class="d-flex align-items-center gap-3">

@@ -53,4 +53,9 @@ class User extends Authenticatable
             get: fn () => $this->photo_path ? asset('storage/' . $this->photo_path) : null,
         );
     }
+
+    public function getEmailForPasswordReset(): string
+    {
+        return $this->username;
+    }
 }

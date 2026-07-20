@@ -3,11 +3,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import Flatpickr from 'vue-flatpickr-component';
-import 'flatpickr/dist/flatpickr.css';
-import { Bar } from 'vue-chartjs'
-import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
+import { Line } from 'vue-chartjs'
+import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, Filler, CategoryScale, LinearScale } from 'chart.js'
 
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
+ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, Filler, CategoryScale, LinearScale)
 
 const props = defineProps({
     hourlyStats: Array,
@@ -106,6 +105,11 @@ const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
+const formatDateShort = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+};
+
 const displayRange = computed(() => {
     if (!startDate.value || !endDate.value) return '';
     return `${formatDate(startDate.value)} — ${formatDate(endDate.value)}`;
@@ -145,9 +149,18 @@ const chartData = computed(() => {
         datasets: [
             {
                 label: 'Pendapatan',
-                backgroundColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                borderColor: '#8b5cf6',
+                borderWidth: 2,
+                pointBackgroundColor: '#8b5cf6',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#8b5cf6',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.4,
                 data: reversedDailyStats.value.map(d => d.revenue),
-                borderRadius: 4
             }
         ]
     }
@@ -156,22 +169,34 @@ const chartData = computed(() => {
 const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+        mode: 'index',
+        intersect: false,
+    },
     scales: {
         y: {
             beginAtZero: true,
             ticks: {
                 callback: function(value) {
                     return 'Rp ' + (value / 1000).toLocaleString('id-ID') + 'k';
-                }
+                },
+                color: 'rgba(255, 255, 255, 0.6)'
             },
             grid: {
-                color: 'rgba(255, 255, 255, 0.05)'
-            }
+                color: 'rgba(255, 255, 255, 0.05)',
+                drawBorder: false,
+            },
+            border: { display: false }
         },
         x: {
+            ticks: {
+                color: 'rgba(255, 255, 255, 0.6)'
+            },
             grid: {
-                display: false
-            }
+                display: false,
+                drawBorder: false,
+            },
+            border: { display: false }
         }
     },
     plugins: {
@@ -179,6 +204,14 @@ const chartOptions = {
             display: false
         },
         tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            titleColor: '#fff',
+            bodyColor: '#e2e8f0',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 12,
+            boxPadding: 6,
+            usePointStyle: true,
             callbacks: {
                 label: function(context) {
                     let label = context.dataset.label || '';
@@ -349,7 +382,7 @@ const chartOptions = {
             </div>
             <div class="bb-card-body">
                 <div style="height: 300px; width: 100%;">
-                    <Bar :data="chartData" :options="chartOptions" />
+                    <Line :data="chartData" :options="chartOptions" />
                 </div>
             </div>
         </div>

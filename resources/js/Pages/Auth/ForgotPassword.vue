@@ -1,10 +1,6 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({
     status: {
@@ -13,7 +9,7 @@ defineProps({
 });
 
 const form = useForm({
-    email: '',
+    username: '',
 });
 
 const submit = () => {
@@ -23,45 +19,47 @@ const submit = () => {
 
 <template>
     <GuestLayout>
-        <Head title="Forgot Password" />
+        <Head title="Lupa Password" />
 
-        <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            Forgot your password? No problem. Just let us know your email
-            address and we will email you a password reset link that will allow
-            you to choose a new one.
+        <div class="mb-4 small text-secondary">
+            Lupa password? Masukkan username Anda dan administrator akan meresetnya (atau sistem akan mengirimkan instruksi).
         </div>
 
         <div
             v-if="status"
-            class="mb-4 text-sm font-medium text-green-600 dark:text-green-400"
+            class="alert alert-success rounded-3 mb-4 small"
         >
             {{ status }}
         </div>
 
         <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
+            <div class="mb-4">
+                <label for="username" class="bb-label text-secondary">Username</label>
 
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
+                <input
+                    id="username"
+                    type="text"
+                    class="bb-input w-100 mt-1"
+                    :class="{'border-danger': form.errors.username}"
+                    v-model="form.username"
                     required
                     autofocus
                     autocomplete="username"
+                    placeholder="Masukkan username"
                 />
 
-                <InputError class="mt-2" :message="form.errors.email" />
+                <div v-if="form.errors.username" class="small text-danger mt-1">{{ form.errors.username }}</div>
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Email Password Reset Link
-                </PrimaryButton>
+            <div class="d-flex align-items-center justify-content-between mt-4">
+                <Link :href="route('login')" class="small text-decoration-none text-secondary">
+                    Kembali ke Login
+                </Link>
+                
+                <button type="submit" :disabled="form.processing" class="bb-btn bb-btn--success py-2 px-4">
+                    <span v-if="form.processing" class="spinner-border spinner-border-sm me-2"></span>
+                    Kirim Permintaan
+                </button>
             </div>
         </form>
     </GuestLayout>

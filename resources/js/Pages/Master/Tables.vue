@@ -2,6 +2,7 @@
 import { ref, computed, toRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { useDatatable } from '@/Composables/useDatatable';
 
 const props = defineProps({
@@ -65,10 +66,23 @@ const closeModal = () => {
     }, 300);
 };
 
-const deleteTable = (id) => {
-    if(confirm('Hapus meja ini? Data sesi aktif akan terpengaruh.')) {
-        router.delete(route('tables.destroy', id));
-    }
+const confirmDelete = ref({
+    show: false,
+    id: null
+});
+
+const openDeleteConfirm = (id) => {
+    confirmDelete.value = { show: true, id };
+};
+
+const executeDelete = () => {
+    if (!confirmDelete.value.id) return;
+    
+    router.delete(route('tables.destroy', confirmDelete.value.id), {
+        onSuccess: () => {
+            confirmDelete.value.show = false;
+        }
+    });
 };
 </script>
 
@@ -127,7 +141,7 @@ const deleteTable = (id) => {
                                         <button @click="editTable(table)" class="bb-btn bb-btn--ghost py-1 px-3 me-2" style="font-size: 0.8rem; text-transform: none;">
                                             <i class="bi bi-pencil"></i> Edit
                                         </button>
-                                        <button @click="deleteTable(table.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
+                                        <button @click="openDeleteConfirm(table.id)" class="bb-btn bb-btn--ghost py-1 px-3" style="font-size: 0.8rem; text-transform: none;">
                                             <i class="bi bi-trash3 text-danger"></i>
                                         </button>
                                     </td>
@@ -191,6 +205,15 @@ const deleteTable = (id) => {
                 </div>
             </div>
         </div>
+
+        <ConfirmModal 
+            :show="confirmDelete.show"
+            title="Hapus Meja"
+            message="Apakah Anda yakin ingin menghapus meja ini? Data sesi aktif yang terkait dengan meja ini akan terpengaruh dan aksi tidak dapat dibatalkan."
+            confirmText="Ya, Hapus"
+            @confirm="executeDelete"
+            @cancel="confirmDelete.show = false"
+        />
 
     </AuthenticatedLayout>
 </template>

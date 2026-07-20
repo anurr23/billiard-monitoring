@@ -1,13 +1,9 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
-    email: {
+    username: {
         type: String,
         required: true,
     },
@@ -19,7 +15,7 @@ const props = defineProps({
 
 const form = useForm({
     token: props.token,
-    email: props.email,
+    username: props.username,
     password: '',
     password_confirmation: '',
 });
@@ -35,66 +31,64 @@ const submit = () => {
     <GuestLayout>
         <Head title="Reset Password" />
 
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
+        <h5 class="bb-text-primary fw-bold mb-4">Reset Password</h5>
 
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
+        <form @submit.prevent="submit">
+            <div class="mb-4">
+                <label for="username" class="bb-label text-secondary">Username</label>
+
+                <input
+                    id="username"
+                    type="text"
+                    class="bb-input w-100 mt-1"
+                    :class="{'border-danger': form.errors.username}"
+                    v-model="form.username"
                     required
-                    autofocus
+                    readonly
                     autocomplete="username"
                 />
 
-                <InputError class="mt-2" :message="form.errors.email" />
+                <div v-if="form.errors.username" class="small text-danger mt-1">{{ form.errors.username }}</div>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
+            <div class="mb-4">
+                <label for="password" class="bb-label text-secondary">Password Baru</label>
 
-                <TextInput
+                <input
                     id="password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="bb-input w-100 mt-1"
+                    :class="{'border-danger': form.errors.password}"
                     v-model="form.password"
                     required
+                    autofocus
                     autocomplete="new-password"
                 />
 
-                <InputError class="mt-2" :message="form.errors.password" />
+                <div v-if="form.errors.password" class="small text-danger mt-1">{{ form.errors.password }}</div>
             </div>
 
-            <div class="mt-4">
-                <InputLabel
-                    for="password_confirmation"
-                    value="Confirm Password"
-                />
+            <div class="mb-4">
+                <label for="password_confirmation" class="bb-label text-secondary">Konfirmasi Password</label>
 
-                <TextInput
+                <input
                     id="password_confirmation"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="bb-input w-100 mt-1"
+                    :class="{'border-danger': form.errors.password_confirmation}"
                     v-model="form.password_confirmation"
                     required
                     autocomplete="new-password"
                 />
 
-                <InputError
-                    class="mt-2"
-                    :message="form.errors.password_confirmation"
-                />
+                <div v-if="form.errors.password_confirmation" class="small text-danger mt-1">{{ form.errors.password_confirmation }}</div>
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Reset Password
-                </PrimaryButton>
+            <div class="d-flex justify-content-end mt-4">
+                <button type="submit" :disabled="form.processing" class="bb-btn bb-btn--success py-3 w-100">
+                    <span v-if="form.processing" class="spinner-border spinner-border-sm me-2"></span>
+                    Simpan Password Baru
+                </button>
             </div>
         </form>
     </GuestLayout>

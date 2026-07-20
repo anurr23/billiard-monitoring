@@ -1,6 +1,6 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({
     status: String,
@@ -67,6 +67,9 @@ const submit = () => {
                     <input type="checkbox" class="form-check-input" id="remember" v-model="form.remember">
                     <label class="form-check-label small text-secondary" for="remember">Remember me</label>
                 </div>
+                <Link :href="route('password.request')" class="small text-decoration-none" style="color: #10b981;">
+                    Lupa Password?
+                </Link>
             </div>
 
             <button type="submit" :disabled="form.processing" class="bb-btn bb-btn--success w-100 py-3 mb-3">

@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { printReceipt } from '@/utils/receipt';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 
 const props = defineProps({
@@ -269,124 +270,6 @@ const checkoutFnbOrder = () => {
         }
     });
 };
-
-// ─── Receipt Printing ───────────────────────────────────
-const printReceipt = (transaction) => {
-    const kasirName = usePage().props.auth?.user?.name || 'Kasir';
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-    const fmtPrice = (val) => {
-        const n = Number(val) || 0;
-        return n.toLocaleString('id-ID');
-    };
-
-    let itemsHtml = '';
-    if (transaction.items && transaction.items.length > 0) {
-        transaction.items.forEach(item => {
-            const name = item.fnb_item?.name || item.name || 'Item';
-            itemsHtml += `
-                <tr>
-                    <td style="padding: 2px 0;">${name} x${item.quantity}</td>
-                    <td style="padding: 2px 0; text-align: right;">${fmtPrice(item.subtotal)}</td>
-                </tr>
-            `;
-        });
-    }
-
-    const fnbCost = Number(transaction.fnb_cost) || 0;
-
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Struk #${transaction.id || ''}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            width: 80mm;
-            padding: 8px;
-            color: #000;
-        }
-        .center { text-align: center; }
-        .right { text-align: right; }
-        .bold { font-weight: bold; }
-        .divider {
-            border-top: 1px dashed #000;
-            margin: 6px 0;
-        }
-        .double-divider {
-            border-top: 2px solid #000;
-            margin: 6px 0;
-        }
-        .store-name { font-size: 18px; font-weight: bold; letter-spacing: 2px; }
-        .total-row { font-size: 16px; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; }
-        td { vertical-align: top; }
-        .footer { margin-top: 10px; font-size: 11px; }
-        @media print {
-            body { width: 80mm; }
-            @page { size: 80mm auto; margin: 0; }
-        }
-    </style>
-</head>
-<body>
-    <div class="center">
-        <div class="store-name">POOLSTREAM</div>
-        <div style="font-size: 10px; margin-top: 2px;">Billiard & Lounge</div>
-    </div>
-    <div class="double-divider"></div>
-
-    <table>
-        <tr><td>No</td><td class="right">#${transaction.id || '-'}</td></tr>
-        <tr><td>Tanggal</td><td class="right">${dateStr} ${timeStr}</td></tr>
-        <tr><td>Kasir</td><td class="right">${kasirName}</td></tr>
-        <tr><td>Customer</td><td class="right">${transaction.customer_name || '-'}</td></tr>
-    </table>
-
-    ${transaction.items && transaction.items.length > 0 ? `
-        <div class="divider"></div>
-        <div class="bold" style="margin-bottom: 4px;">F&B</div>
-        <table>${itemsHtml}</table>
-    ` : ''}
-
-    <div class="divider"></div>
-    <table>
-        <tr><td>Subtotal F&B</td><td class="right">${fmtPrice(fnbCost)}</td></tr>
-    </table>
-    <div class="double-divider"></div>
-    <table>
-        <tr class="total-row">
-            <td>TOTAL</td>
-            <td class="right">Rp ${fmtPrice(fnbCost)}</td>
-        </tr>
-    </table>
-    <div class="double-divider"></div>
-
-    <div class="center footer">
-        <div>Terima kasih!</div>
-        <div>Selamat menikmati ☕</div>
-    </div>
-
-    <script>
-        window.onload = function() {
-            window.print();
-        };
-    <\/script>
-</body>
-</html>`;
-
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-    }
-};
-
 </script>
 
 <template>
@@ -442,14 +325,11 @@ const printReceipt = (transaction) => {
         <div v-if="orderTab === 'active'">
             <div v-if="queuedFnbOrders.length > 0" class="row g-3">
                 <div v-for="order in queuedFnbOrders" :key="order.id" class="col-12 col-md-4 col-xl-3">
-                    <div @click="openFnbDetailModal(order)"
-                         class="bb-card overflow-hidden" style="cursor: pointer; border-top: 3px solid #f59e0b; transition: all 0.25s ease;"
-                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.15)'"
-                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow=''">
+                      <div @click="openFnbDetailModal(order)"
+                          class="bb-card overflow-hidden bb-order-card bb-order-card--active">
                         <div class="p-3">
                             <div class="d-flex align-items-center gap-3 mb-3">
-                                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold" 
-                                     style="width: 42px; height: 42px; background: rgba(245,158,11,0.12); color: #f59e0b; font-size: 1.1rem;">
+                                <div class="bb-queue-number">
                                     {{ order.queueNumber }}
                                 </div>
                                 <div class="flex-grow-1 overflow-hidden">
@@ -487,11 +367,9 @@ const printReceipt = (transaction) => {
         <div v-if="orderTab === 'history'">
             <div v-if="filteredFnbHistory.length > 0" class="row g-3">
                 <div v-for="order in filteredFnbHistory" :key="order.id" class="col-12 col-md-4 col-xl-3">
-                    <div @click="openFnbDetailModal(order)"
-                         class="bb-card overflow-hidden" style="cursor: pointer; transition: all 0.25s ease;"
-                         :style="{ borderTop: order.status === 'completed' ? '3px solid #10b981' : '3px solid #6c757d' }"
-                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.15)'"
-                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow=''">
+                      <div @click="openFnbDetailModal(order)"
+                          class="bb-card overflow-hidden bb-order-card"
+                          :class="order.status === 'completed' ? 'bb-order-card--completed' : 'bb-order-card--cancelled'">
                         <div class="p-3">
                             <div class="d-flex align-items-center gap-3 mb-3">
                                 <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"

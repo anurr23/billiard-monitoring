@@ -12,12 +12,6 @@ class Table extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'start_time' => 'datetime',
-        'end_time' => 'datetime',
-        'expected_end_time' => 'datetime',
-    ];
-
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
